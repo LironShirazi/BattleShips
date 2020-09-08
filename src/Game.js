@@ -54,7 +54,7 @@ class Game extends React.Component {
                 </div>
                 <div className="boards-place">
                     <Board boardSize={this.state.boardSize} subsConfig={this.subsConfig} status={this.status} /> {/*Choosing ships board*/}
-                    <Board boardSize={this.state.boardSize} status={this.status}/>   {/*Playing Board(enemy board)*/}
+                    <Board boardSize={this.state.boardSize} status={{}}/>   {/*Playing Board(enemy board)*/}
                 </div>
             </div>
         );

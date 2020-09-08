@@ -9,13 +9,11 @@ class Board extends React.Component {
     constructor(boardSize = 100) {
         super();
         this.boardId = hashId();
-        this.boardSize = this.boardSize;
+        this.boardSize = boardSize;
+        this.subs = new Array(5);
         this.countClicks = 0;
-        this.subs = new Array(5).fill(new Sub());
         this.x1 = null;
         this.y1 = null;
- 
-       
         
         this.state = {
             board: Array(100).fill(null),
@@ -37,18 +35,7 @@ class Board extends React.Component {
 
 
     //Sets sub coordinates which recevied by the player
-    setSubCoords(sub, coords) {
-        this.subs.forEach(singleSub => {
-            coords.forEach(coord => {
-                if(singleSub.subCoordsArr.includes(coord)) {
-                    console.log('Sub already located on those coordinates.');
-                    return;
-                } 
-            })        
-        });
-        this.subs[sub].subCoordsArr = coords; // TO CHECK - if its illigle subs[sub]
-        this.subs[sub].isDead = false; // Sub is alive when coords is set.
-    }
+  
 
     attack = (coords) => {
         this.subs.forEach(sub => {
@@ -60,9 +47,9 @@ class Board extends React.Component {
                 }
                 //missed the hit
             } else {
-                this.board[coords.x][coords.y] = 'X';
+                this.board[coords.x][coords.y] = '*';
             }
-        })
+        });
     }
 
     
@@ -82,29 +69,38 @@ class Board extends React.Component {
 
             if(this.x1 === this.x2) {
                if(this.y1 === this.y2) {
-                console.log('You chose the same square. Try again.');
+                console.log('You can not choose the same square. Try again.');
                 } else {
+                    //two legal clicks made 
+                     const coords = [];
                      subsConfigHolder.some((singleSub, index, theArray) => {
-                        //  if(this.y1)
+                
                         if (singleSub.placed < singleSub.count) {
                             if ((Math.abs(this.y1 - this.y2) +1) === singleSub.size) {
                                 console.log('set the ship!');
                                 theArray[index].placed ++;
+                                
 
                                 // ship selected from left to right on the same row click
                                 let dozens = this.x1 * 10;
                                 if(this.y1 < this.y2 ) {
-                                    for(let i=this.y1; i<this.y2+1;i++) {
+                                    for(let i=this.y1; i<=this.y2;i++) {
                                         let combinedPoint = dozens + i;
                                         board[combinedPoint] = 'X';
                                         console.log(combinedPoint);
+                                        coords.push(combinedPoint);
                                     }
+                                    this.subs.push(new Sub(singleSub.size, coords));
+
+
                                     //ship selected from right to left on the same row
                                 } else if (this.y1 > this.y2) {
                                      for(let i=this.y1; i>=this.y2; i--) {
                                          let combinedPoint = dozens + i;
                                          board[combinedPoint] = 'X';
+                                         coords.push(combinedPoint);
                                      }
+                                     this.subs.push(new Sub(singleSub.size, coords));
                                 }
                               this.setState({subsConfig: subsConfigHolder, board:board})
                             } else {
@@ -116,6 +112,7 @@ class Board extends React.Component {
                     });
                 }
             } else if (this.y1 === this.y2) {
+                const coords = [];
                 subsConfigHolder.some((singleSub, index, theArray) => {
                     if(singleSub.placed < singleSub.count) {
                         if (Math.abs(this.x1 - this.x2) +1 === singleSub.size) {
@@ -127,8 +124,9 @@ class Board extends React.Component {
                                 for(let i=this.x1; i<=this.x2; i++) {
                                     let combinedPoint = i*10 + remainder;
                                     board[combinedPoint] = 'X';
-                                    
+                                    coords.push(combinedPoint)
                                 }
+                            this.subs.push(new Sub(singleSub.size, coords));
                             } else {
                                 for(let i=this.x1; i>=this.x2; i--) {
                                     let combinedPoint = i*10 + remainder;
@@ -199,9 +197,11 @@ class Board extends React.Component {
            return this.renderSquare(index);
         });
 
-        const subsToPlaceList = this.state.subsConfig && this.state.subsConfig.map(sub => {
-            if(sub.count !== sub.placed)
-            return <li key={sub.name}><span>{sub.count - sub.placed} {sub.name}s  of size {sub.size}</span></li>;
+        const subsToPlaceList = this.state.subsConfig && 
+                                this.props.status ==='pre-game' && 
+                                this.state.subsConfig.map(sub => {
+                                if(sub.count !== sub.placed)
+                                return <li key={sub.name}><span>{sub.count - sub.placed} {sub.name}s  of size {sub.size}</span></li>;
         });
 
       return (
