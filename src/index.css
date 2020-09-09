@@ -27,23 +27,13 @@ ol, ul {
   flex: 1 1 100%;
 }
 
-.boards-place {
-  margin-top: 2rem;
+.button-selectors__entered-name {
   display: flex;
-  flex-direction: row;
-  justify-content: space-around;
+  align-items: flex-start;
 }
+
 
 .status {
   margin-bottom: 10px;
 }
 
-.subs-to-place {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  /* flex: 1 1 100%; */
-  align-items: center;
-  order: 0;
-
-}

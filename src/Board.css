@@ -6,3 +6,17 @@
     width: 35%;
   }
   
+.boards-place {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+}
+
+.subs-to-place {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  order: 0;
+}
