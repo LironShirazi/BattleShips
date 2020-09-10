@@ -1,11 +1,11 @@
 import hashId from './hashHelperFunction';
 
 class Sub {
-    constructor(size, coordsArr) {
+    constructor(size, coordsArr, isDead = true) {
         this.subId = hashId();
         this.subSize = size;
         this.numHits = 0;
-        this.idDead = true;
+        this.idDead = isDead;
         this.subCoordsArr = new Array(coordsArr);
     }
 
