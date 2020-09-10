@@ -19,7 +19,6 @@ class Game extends React.Component {
         // this.actions = [];
         
         
-        
         this.state = {
             players: [
                 this.player('Liron', Array(this.boardSize).fill(null)),
