@@ -182,6 +182,7 @@ class Game extends React.Component {
 
     render() {
         console.log(this.state.players);
+        console.log('status'+ this.state.status)
 
         return (
             <div className="main">
@@ -204,7 +205,7 @@ class Game extends React.Component {
                     <Board 
                         boardSize={this.state.boardSize} 
                         subsConfig={this.state.subsConfig} 
-                        status={this.status} 
+                        status={this.state.status} 
                         board={this.state.board}
                         onClick={ (i) => this.twoClicksForPlaceSub(i)}
                         subsPlaced={this.state.isPlaced}
@@ -217,6 +218,7 @@ class Game extends React.Component {
                         boardSize={this.state.boardSize} 
                         status={this.state.status}
                         board={this.state.enemyBoard}
+                        disabled={!this.state.subsPlaced}
                     
 
                     />   

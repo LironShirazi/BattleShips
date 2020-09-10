@@ -52,6 +52,7 @@ class Board extends React.Component {
                 onClick={() => { this.props.onClick(i) }} 
                 key={i} 
                 boardSize={this.props.boardSize}
+                disabled={this.props.disabled}
              />;
     }
     
