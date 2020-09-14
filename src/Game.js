@@ -1,8 +1,10 @@
-import hashId from './hashHelperFunction';
 import React from 'react';
+import enemyData from './enemyMock';
+import hashId from './hashHelperFunction';
 import Board from './Board';
 import Sub from './Sub';
 import './index.css';
+
 
 class Game extends React.Component {
     constructor() {
@@ -12,20 +14,18 @@ class Game extends React.Component {
         this.gameId = hashId();
         this.isSubsPlacedCheck = this.isSubPlacedHandler.bind(this);
         this.player = this.player.bind(this);
-        // this.boards = []
-        // this.players = players;
-        // this.boardSize = boardSize;
-        // this.playerTurn = playerTurn;
-        // this.actions = [];
-        
+
+        // this.actions = [];        
         
         this.state = {
+            enemyData: enemyData, 
             players: [
-                this.player('Liron', Array(this.boardSize).fill(null)),
-                this.player('Shahar', Array(this.boardSize).fill(null))
-            ],
+                        this.player('Liron', Array(this.boardSize).fill(null)),
+                        this.player('Shahar', Array(this.boardSize).fill(null))
+                    ],
+
             boardSize : 100,
-            board: Array(this.boardSize).fill(null),
+            // board: Array(this.boardSize).fill(null),
             subsConfig : [
                 { name: 'Submarine', size: 4, count: 1, placed: 0 },
                 { name: 'Cruiser', size: 3, count: 2, placed: 0 },
@@ -33,8 +33,24 @@ class Game extends React.Component {
             ],
             subs: [],
             subsPlaced: false,
-            enemyBoard: Array(this.boardSize).fill(null),
-            status: 'pre-game'
+            status: 'pre-game',
+            isPlayerOneTurn : true,
+            winner: ''
+        }
+    }
+
+
+    componentDidUpdate(prevProps, prevState) {
+        console.log('[componentDidUpdate]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
+        
+        if(this.state.isPlayerOneTurn !== prevState.isPlayerOneTurn) {
+            console.log('first if - turn changed');
+            if(!this.state.isPlayerOneTurn) {
+                console.log('seccond if(player 2 turn)');
+                setTimeout( () => this.receiveAttack(), 2000);  
+                // this.receiveAttack();
+                console.log('after update state');  
+            }
         }
     }
     // componentWillReceiveProps(nextProps) {
@@ -45,47 +61,142 @@ class Game extends React.Component {
     //     this.boardSize = size;
     // }
 
-    // winCheck(currentBoard) {
-    //     currentBoard.forEach(ship => {
-    //         if(ship.isDead === false);
-    //         return false;
-    //     });
-    //     // need to update player's score
-    //     return true;
-    // }
-    player(name, board = []) {
+    // Receiving Subs array, returns true if player win the enemy
+    player(name, board) {
         return {
             name: name,
             playerId : hashId(),
             board: board,
-            score: 0
+            score: 0,
+            subs: []
         }
     }
 
+    winCheck(subs) {
+       return subs.every(sub => {
+            if(sub.isDead) return true;
+            return false;
+        });
+    }
+    
+    receiveAttack() {
+        const i = Math.floor(Math.random() * 100);
+        const playerData = {
+            ...this.state.enemyData, 
+            board:[...this.state.players[0].board], 
+            subs: [...this.state.players[0].subs] 
+        }
+
+            // hit an empty square
+            if(playerData.board[i] === null) {
+                playerData.board[i] = 'O';
+                
+            } else if (playerData.board[i] === 'X') { // ship is hitted
+                playerData.subs.forEach(sub => { 
+                    if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
+                        sub.numHits ++;
+                       if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
+                          playerData.board[i] = '#';
+                       } else {  // hitted and killed the ship
+                            sub.isDead = true;
+                            playerData.board[i] = '*'; 
+                        }
+                    }
+                });
+            }
+            const players = [...this.state.players];
+            if(this.winCheck(playerData.subs)) {
+                players[1].score++; 
+                console.log('player won!');
+                this.setState({ winner : playerData.name, status:'player-won' })
+            }
+            players[0].board = playerData.board;
+            this.setState(prevState => {
+                return {
+                    players: players,
+                    isPlayerOneTurn: !prevState.isPlayerOneTurn
+                }
+            });
+    }
+        
     boardSizeHandler(size) {
         this.setState({boardSize:size*size});
+        this.boardSize = size*size;
     }
     
     isSubPlacedHandler () {
         const isPlaced = this.state.subsConfig.every(sub => sub.count === sub.placed);
         if(isPlaced) {
-            this.setState({ subsPlaced: isPlaced, status: 'game-started' });
+            this.setState({ 
+                subsPlaced: isPlaced,
+                status: 'game-started'
+            });
         }
     }
 
-    twoClicksForPlaceSub(i) {
-        if(this.state.board[i] !== null) return; // already caught point
+    PlayingTurnHandler(i) {
+        console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
+        if(this.state.isPlayerOneTurn) {
+        const board = [...this.state.players[1].board];
+        if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
+        const enemyData = {
+            ...this.state.enemyData, 
+            board:[...this.state.enemyData.board], 
+            subs: [...this.state.enemyData.subs] // clone enemy data
+        };  
+        
+        if(enemyData.board[i] === null) {
+            board[i] = 'O';
+            enemyData.board[i] = 'O';
+            
+        } else if (enemyData.board[i] === 'X') { // ship is hitted
+            enemyData.subs.forEach(sub => { 
+                if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
+                    sub.numHits ++;
+                   if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
+                      board[i] = '#';
+                      enemyData.board[i] = '#';
+                   } else {  // hitted and killed the ship
+                        sub.isDead = true;
+                        board[i] = '*'; // for view purpose -  if sub is killed show last hit as *
+                        enemyData.board[i] = '*'; 
+                    }
+           }
+        });
+    }
+        const players = [...this.state.players];
+        //need to implement game init for new game if player won the game.
+            if(this.winCheck(enemyData.subs)) {
+                players[0].score ++; 
+                console.log('Player 1 won!')
+                this.setState({ winner: players[0].name, status: 'player-won'})
+            }
+            players[1].board = board;
+            players[1].sub = enemyData.subs; 
+            this.setState( prevState => {
+                return {
+                    players : players,
+                    enemyData: enemyData,
+                    isPlayerOneTurn: !prevState.isPlayerOneTurn
+                }
+            });
+      }
+    }
+
+    placeSubsHandler(i) {
+        const boardSizeSqrt = Math.sqrt(this.state.boardSize);
+        if(this.state.players[0].board[i] !== null) return; // already caught point
 
         this.countClicks ++;
         if(this.countClicks === 1) {
-            this.x1 = Math.floor(i/10);
-            this.y1 = i%10;
+            this.x1 = Math.floor(i/boardSizeSqrt);
+            this.y1 = i%boardSizeSqrt;
 
         } else if (this.countClicks === 2) {
             const subsConfigHolder = [...this.state.subsConfig];
-            const board = [...this.state.board];
-            this.x2 = Math.floor(i/10);
-            this.y2 = i%10;
+            const board = [...this.state.players[0].board];
+            this.x2 = Math.floor(i/boardSizeSqrt);
+            this.y2 = i%boardSizeSqrt;
 
             if(this.x1 === this.x2) {
                if(this.y1 === this.y2) {
@@ -101,7 +212,7 @@ class Game extends React.Component {
                                 theArray[index].placed ++;
                                 
                                 // ship selected from left to right on the same row click
-                                let dozens = this.x1 * 10;
+                                let dozens = this.x1 * boardSizeSqrt;
                                 if(this.y1 < this.y2 ) {
                                     for(let i=this.y1; i<=this.y2;i++) {
                                         let combinedPoint = dozens + i;
@@ -109,7 +220,7 @@ class Game extends React.Component {
                                         console.log(combinedPoint);
                                         coords.push(combinedPoint);
                                     }
-                                    createSub = new Sub(singleSub.size, coords, false);
+                                    createSub = new Sub(singleSub.size, coords);
                                   
                                     //ship selected from right to left on the same row
                                 } else if (this.y1 > this.y2) {
@@ -118,18 +229,31 @@ class Game extends React.Component {
                                          board[combinedPoint] = 'X';
                                          coords.push(combinedPoint);
                                      }
-                                     createSub = new Sub(singleSub.size, coords, false);
+                                     createSub = new Sub(singleSub.size, coords);
                                     }
-                              this.setState({
-                                  subsConfig: subsConfigHolder, 
-                                  board:board,
-                                  subs : this.state.subs.concat(createSub)
-                                })
+                            //   this.setState({
+                            //       subsConfig: subsConfigHolder, 
+                            //       board:board,
+                            //       subs : this.state.subs.concat(createSub)
+                            //     })
+
+                                this.setState({
+                                    subsConfig: subsConfigHolder,
+                                    players: this.state.players.map(player => {
+                                       if(player.name === 'Liron') {
+                                           return { 
+                                               ...player, 
+                                               board:board,
+                                               subs: this.state.players[0].subs.concat(createSub)
+                                            }
+                                       } else return player;
+                                   }),
+                                });
+
                             } else {
                                 this.countClicks = 0;
                                 return true; 
                             }
-                            // console.log(this.subsConfig);
                         } 
                           
                         this.isSubsPlacedCheck();
@@ -148,23 +272,47 @@ class Game extends React.Component {
                             let remainder = this.y1;
                             if(this.x1 < this.x2) {
                                 for(let i=this.x1; i<=this.x2; i++) {
-                                    let combinedPoint = i*10 + remainder;
+                                    let combinedPoint = i*boardSizeSqrt + remainder;
                                     board[combinedPoint] = 'X';
                                     coords.push(combinedPoint);
                                 }
-                                createSub = new Sub(singleSub.size, coords, false);
+                                createSub = new Sub(singleSub.size, coords);
                             } else {
                                 for(let i=this.x1; i>=this.x2; i--) {
-                                    let combinedPoint = i*10 + remainder;
+                                    let combinedPoint = i*boardSizeSqrt + remainder;
                                     board[combinedPoint] = 'X';
                                 }
                             }
-
+                            
                             this.setState({
                                 subsConfig: subsConfigHolder,
-                                board: board,
-                                subs: this.state.subs.concat(createSub)
+                                players: this.state.players.map(player => {
+                                   if(player.name === 'Liron') {
+                                       return { 
+                                           ...player,
+                                            board:board,
+                                            subs: this.state.players[0].subs.concat(createSub)
+
+                                        }
+                                   } else return player;
+                               }),
                             });
+
+                            // this.setState({
+                            //     subsConfig: subsConfigHolder,
+                            //     board: board,
+                            //     subs: this.state.subs.concat(createSub)
+                            // });
+
+                            // this.setState(prevState =>{
+                            //     return{
+                            //          ...prevState,
+                            //          subsConfig: subsConfigHolder
+                            //          players[0].board : board,
+                            //          subs: this.state.subs.concat(createSub)
+                            //          counter : prevState.counter +1
+                            //     }
+                            //  })
 
                         } else {
                             console.log('You have to place the current sub size');
@@ -182,7 +330,12 @@ class Game extends React.Component {
 
     render() {
         console.log(this.state.players);
-        console.log('status'+ this.state.status)
+        console.log('status : '+ this.state.status)
+        console.log(this.state.players[0].board);
+        console.log(this.state.players[1].board);
+        console.log('isPlayerOneTurn : ' + this.state.isPlayerOneTurn);
+        console.log(this.state.enemyData);
+        
 
         return (
             <div className="main">
@@ -196,7 +349,14 @@ class Game extends React.Component {
                     this.state.status === 'pre-game' ?
                     <p>Please place on the board:</p>  :
                     this.state.status === 'game-started' ? 
-                    <p>Player 1 its your turn, choose a spot to attack!</p> : null
+                        <p>{this.state.isPlayerOneTurn ? 
+                            this.state.players[0].name : 
+                            this.state.players[1].name } 
+                            &nbsp;, it's your turn, choose a spot to attack!
+                        </p> :
+                    this.state.status === 'player-won' ?
+                        <p>{this.state.winner + ' '} Won the game!</p> 
+                        : null
                    }
                 </div> 
                 </div>
@@ -206,10 +366,11 @@ class Game extends React.Component {
                         boardSize={this.state.boardSize} 
                         subsConfig={this.state.subsConfig} 
                         status={this.state.status} 
-                        board={this.state.board}
-                        onClick={ (i) => this.twoClicksForPlaceSub(i)}
-                        subsPlaced={this.state.isPlaced}
+                        board={this.state.players[0].board}
+                        onClick={ (i) => this.placeSubsHandler(i)}
+                        subsPlaced={this.state.subsPlaced}
                         subs={this.state.subs}
+                        disabled={this.state.subsPlaced}
 
                     /> 
 
@@ -217,12 +378,11 @@ class Game extends React.Component {
                     <Board 
                         boardSize={this.state.boardSize} 
                         status={this.state.status}
-                        board={this.state.enemyBoard}
+                        board={this.state.players[1].board}
                         disabled={!this.state.subsPlaced}
-                    
-
-                    />   
-                    
+                        onClick= {(i) => this.PlayingTurnHandler(i)}
+                        isPlayerOneTurn={this.state.isPlayerOneTurn}
+                    />    
                 </div>
             </div>
         );

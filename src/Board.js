@@ -3,46 +3,6 @@ import './Board.css';
 import Square from './Square'
 
 class Board extends React.Component {
-    // constructor(props) {
-    //     super(props);
-    //     this.boardId = hashId();
-    //     // this.boardSize = boardSize;
-    //     this.subs = [];
-    //     this.countClicks = 0;
-    //     // this.isSubsPlacedCheck = this.isSubPlacedHandler.bind(this);
-    //   }  
-
-    //     this.state = {
-    //         board: Array(100).fill(null),
-    //         subsConfig : [
-    //             { name: 'Submarine', size: 4, count: 1, placed: 0 },
-    //             { name: 'Cruiser', size: 3, count: 2, placed: 0 },
-    //             { name: 'Destroyer', size: 2, count: 2, placed: 0 }
-    //         ],
-    //         subsPlaced: false
-    //     }
-    // }
-
-    // componentDidMount() {
-    //     if(this.props.subsConfig) 
-    //     this.setState({ subsConfig: this.props.subsConfig })
-    // }
-
-
-    // attack = (coords) => {
-    //     this.subs.forEach(sub => {
-    //         // Hitted a sub
-    //         if (sub.subCoordsArr.includes(coords)) {
-    //             // hitted and killed
-    //             if(!sub.getHitsLeftToDead) {
-    //                 this.subs[sub].isDead = true;
-    //             }
-    //             //missed the hit
-    //         } else {
-    //             this.board[coords.x][coords.y] = '*';
-    //         }
-    //     });
-    // }
 
 
     renderSquare(i) {
@@ -53,15 +13,13 @@ class Board extends React.Component {
                 key={i} 
                 boardSize={this.props.boardSize}
                 disabled={this.props.disabled}
+                isPlayerOneTurn={this.props.isPlayerOneTurn}
              />;
     }
     
 
     render() {
         //PRINTING THE BOARD TO THE SCREEN
-        console.log(this.props.board);
-        console.log(this.props.subsConfig); 
-        console.log(this.props.subs);
 
         const printBoard = [...Array(this.props.boardSize).keys()].map(index => {
            return this.renderSquare(index);
