@@ -1,4 +1,4 @@
-import hashId from './hashHelperFunction';
+import hashId from './util/hashHelperFunction';
 
 class Action {
     constructor(gameId, playerId, actionType, 

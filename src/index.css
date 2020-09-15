@@ -6,7 +6,8 @@ code {
 }
 
 body {
-  font: 14px "Century Gothic", Futura, sans-serif;
+  font: 1rem 'Montserrat', sans-serif;
+  /* font: 14px "Century Gothic", Futura, sans-serif; */
   margin: 20px;
 }
 
@@ -23,7 +24,7 @@ p {
   flex-direction: column;
 }
 
-.button-selectors {
+.main-header {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -31,9 +32,11 @@ p {
   flex: 1 1 100%;
 }
 
-.button-selectors__entered-name {
+.button-selectors {
   display: flex;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-content: space-between;
 }
 
 

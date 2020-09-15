@@ -1,9 +1,14 @@
 import React from 'react';
-import enemyData from './enemyMock';
-import hashId from './hashHelperFunction';
+import Button from '@material-ui/core/Button';
+import ButtonGroup from '@material-ui/core/ButtonGroup';
+
+import enemyData from './util/enemyMock';
+import hashId from './util/hashHelperFunction';
 import Board from './Board';
 import Sub from './Sub';
 import './index.css';
+import StatusLog from './components/StatusLog/StatusLog';
+
 
 
 class Game extends React.Component {
@@ -14,6 +19,7 @@ class Game extends React.Component {
         this.gameId = hashId();
         this.isSubsPlacedCheck = this.isSubPlacedHandler.bind(this);
         this.player = this.player.bind(this);
+        
 
         // this.actions = [];        
         
@@ -27,7 +33,7 @@ class Game extends React.Component {
             boardSize : 100,
             // board: Array(this.boardSize).fill(null),
             subsConfig : [
-                { name: 'Submarine', size: 4, count: 1, placed: 0 },
+                { name: 'Sub', size: 4, count: 1, placed: 0 },
                 { name: 'Cruiser', size: 3, count: 2, placed: 0 },
                 { name: 'Destroyer', size: 2, count: 2, placed: 0 }
             ],
@@ -47,7 +53,7 @@ class Game extends React.Component {
             console.log('first if - turn changed');
             if(!this.state.isPlayerOneTurn) {
                 console.log('seccond if(player 2 turn)');
-                setTimeout( () => this.receiveAttack(), 2000);  
+                setTimeout( () => this.receiveAttack(), 500);  
                 // this.receiveAttack();
                 console.log('after update state');  
             }
@@ -80,13 +86,12 @@ class Game extends React.Component {
     }
     
     receiveAttack() {
-        const i = Math.floor(Math.random() * 100);
+        const i = Math.floor(Math.random() * 14);
         const playerData = {
             ...this.state.enemyData, 
             board:[...this.state.players[0].board], 
             subs: [...this.state.players[0].subs] 
         }
-
             // hit an empty square
             if(playerData.board[i] === null) {
                 playerData.board[i] = 'O';
@@ -99,7 +104,7 @@ class Game extends React.Component {
                           playerData.board[i] = '#';
                        } else {  // hitted and killed the ship
                             sub.isDead = true;
-                            playerData.board[i] = '*'; 
+                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '*')
                         }
                     }
                 });
@@ -158,8 +163,9 @@ class Game extends React.Component {
                       enemyData.board[i] = '#';
                    } else {  // hitted and killed the ship
                         sub.isDead = true;
-                        board[i] = '*'; // for view purpose -  if sub is killed show last hit as *
-                        enemyData.board[i] = '*'; 
+                        sub.subCoordsArr.forEach(coord => board[coord] = '*')
+                         // for view purpose -  if sub is killed show last hit as *
+                        
                     }
            }
         });
@@ -339,13 +345,26 @@ class Game extends React.Component {
 
         return (
             <div className="main">
-                <div className="button-selectors">
+                <div className="main-header">
                         <h1>BattleShip</h1>
                         <h4>Please select board size</h4>
-                        <button value={10} onClick={(e) => this.boardSizeHandler(e.target.value)}>10X10</button>
-                        <button value={14} onClick={(e) => this.boardSizeHandler(e.target.value)}>14X14</button>
+                        <div className="button-selectors">
+                            <ButtonGroup color="primary" variant="contained" aria-label="outlined primary button group">
+                                <Button value={10} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>10X10</Button>
+                                <Button value={14} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>14X14</Button>
+                            </ButtonGroup>
+                            {/* <button value={10} onClick={(e) => this.boardSizeHandler(e.target.value)}>10X10</button>
+                            <button value={14} onClick={(e) => this.boardSizeHandler(e.target.value)}>14X14</button> */}
+                        </div>
                 <div>
-                   {
+                    <StatusLog 
+                        status={this.state.status}
+                        isPlayerOneTurn={this.state.isPlayerOneTurn}
+                        playerOneName={this.state.players[0].name} 
+                        playerTwoName={this.state.players[1].name} 
+                        winner={this.state.winner}
+                    />
+                   {/* {
                     this.state.status === 'pre-game' ?
                     <p>Please place on the board:</p>  :
                     this.state.status === 'game-started' ? 
@@ -357,7 +376,7 @@ class Game extends React.Component {
                     this.state.status === 'player-won' ?
                         <p>{this.state.winner + ' '} Won the game!</p> 
                         : null
-                   }
+                   } */}
                 </div> 
                 </div>
                 <div className="boards-place">
@@ -371,6 +390,7 @@ class Game extends React.Component {
                         subsPlaced={this.state.subsPlaced}
                         subs={this.state.subs}
                         disabled={this.state.subsPlaced}
+                        // hover={}
 
                     /> 
 

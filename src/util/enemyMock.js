@@ -1,5 +1,5 @@
 import hashId from './hashHelperFunction';
-import Sub from './Sub';
+import Sub from '../Sub';
 
 const enemyData = {
     name: 'Shahar1',

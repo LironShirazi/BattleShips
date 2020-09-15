@@ -14,6 +14,7 @@ class Board extends React.Component {
                 boardSize={this.props.boardSize}
                 disabled={this.props.disabled}
                 isPlayerOneTurn={this.props.isPlayerOneTurn}
+                hover={!this.props.disabled}
              />;
     }
     

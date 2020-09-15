@@ -7,16 +7,23 @@
   }
   
 .boards-place {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
+
   display: flex;
   flex-direction: row;
   justify-content: space-around;
 }
 
 .subs-to-place {
+  margin-top: -1rem;
+  font: inherit;
   position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
   order: 0;
+}
+
+li:first-child {
+  font-weight: bold
 }
