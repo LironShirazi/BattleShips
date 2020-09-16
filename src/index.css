@@ -13,6 +13,7 @@ body {
 
 ol, ul {
   padding-left: 30px;
+  margin-top: -0.12rem;
 }
 
 p {
@@ -37,10 +38,5 @@ p {
   flex-wrap: wrap;
   flex-direction: row;
   align-content: space-between;
-}
-
-
-.status {
-  margin-bottom: 10px;
 }
 

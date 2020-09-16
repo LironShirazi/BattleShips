@@ -3,8 +3,6 @@ import './Board.css';
 import Square from './Square'
 
 class Board extends React.Component {
-
-
     renderSquare(i) {
       return <Square
                 isSubsPlaced={ this.props.subsPlaced }
@@ -27,22 +25,22 @@ class Board extends React.Component {
         });
 
         // Showing which subs to place on board
-        const subsToPlaceList = this.props.subsConfig && 
-                                this.props.status ==='pre-game' && 
-                                this.props.subsConfig.map(sub => {
-                                if(sub.count !== sub.placed) {
-                                    return <li key={sub.name}><span>{sub.count - sub.placed} {sub.name}s  of size {sub.size}</span></li>;
-                                }
-                                return null;
-                            });
+        // const subsToPlaceList = this.props.subsConfig && 
+        //                         this.props.status ==='pre-game' && 
+        //                         this.props.subsConfig.map(sub => {
+        //                         if(sub.count !== sub.placed) {
+        //                             return <li key={sub.name}><span>{sub.count - sub.placed} {sub.name}s  of size {sub.size}</span></li>;
+        //                         }
+        //                         return null;
+        //                     });
 
       return (
           <React.Fragment>
-            { this.props.subsConfig &&
+            {/* { this.props.subsConfig &&
             <div className="subs-to-place">
                 <ul>{subsToPlaceList}</ul>
             </div>
-            }       
+            }        */}
             <div className="board-container">
                 {printBoard}
             </div>

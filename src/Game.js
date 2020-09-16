@@ -8,6 +8,8 @@ import Board from './Board';
 import Sub from './Sub';
 import './index.css';
 import StatusLog from './components/StatusLog/StatusLog';
+import SubsToPlaceList from './components/SubsToPlaceList';
+import HistoryList from './components/HistoryList';
 
 
 
@@ -41,7 +43,9 @@ class Game extends React.Component {
             subsPlaced: false,
             status: 'pre-game',
             isPlayerOneTurn : true,
-            winner: ''
+            winner: '',
+            stepNumber: 0
+
         }
     }
 
@@ -74,9 +78,21 @@ class Game extends React.Component {
             playerId : hashId(),
             board: board,
             score: 0,
-            subs: []
+            subs: [],
+            history: [
+                {
+                    board: Array(this.boardSize).fill(null)
+                }
+            ]
         }
     }
+
+    jumpTo(step) {
+        this.setState({
+          stepNumber: step,
+          isPlayerOneTurn: step % 2 === 0
+        });
+      }
 
     winCheck(subs) {
        return subs.every(sub => {
@@ -86,7 +102,7 @@ class Game extends React.Component {
     }
     
     receiveAttack() {
-        const i = Math.floor(Math.random() * 14);
+        const i = Math.floor(Math.random() * 100);
         const playerData = {
             ...this.state.enemyData, 
             board:[...this.state.players[0].board], 
@@ -142,7 +158,10 @@ class Game extends React.Component {
     PlayingTurnHandler(i) {
         console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
         if(this.state.isPlayerOneTurn) {
-        const board = [...this.state.players[1].board];
+        const history = this.state.players[0].history.slice(0,this.state.stepNumber + 1);
+        const current = history[history.length -1];
+        const board = [...current.board];
+
         if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
         const enemyData = {
             ...this.state.enemyData, 
@@ -164,8 +183,7 @@ class Game extends React.Component {
                    } else {  // hitted and killed the ship
                         sub.isDead = true;
                         sub.subCoordsArr.forEach(coord => board[coord] = '*')
-                         // for view purpose -  if sub is killed show last hit as *
-                        
+                         // for view purpose -  if sub is killed show last hit as *  
                     }
            }
         });
@@ -177,13 +195,19 @@ class Game extends React.Component {
                 console.log('Player 1 won!')
                 this.setState({ winner: players[0].name, status: 'player-won'})
             }
+            
+            players[0].history = history.concat([{
+                board:board
+            }])
             players[1].board = board;
             players[1].sub = enemyData.subs; 
             this.setState( prevState => {
                 return {
                     players : players,
                     enemyData: enemyData,
-                    isPlayerOneTurn: !prevState.isPlayerOneTurn
+                    isPlayerOneTurn: !prevState.isPlayerOneTurn,
+                    stepNumber: players[0].history.length - 1,
+
                 }
             });
       }
@@ -206,10 +230,12 @@ class Game extends React.Component {
 
             if(this.x1 === this.x2) {
                if(this.y1 === this.y2) {
-                console.log('You can not choose the same square. Try again.');
+                   this.countClicks = 0; 
+                   console.log('You can not choose the same square. Try again.');
+                   return;
                 } else {
                     //two legal clicks made 
-                     const coords = [];
+                     let coords = [];
                      let createSub;
                      subsConfigHolder.some((singleSub, index, theArray) => {
                         if (singleSub.placed < singleSub.count) {
@@ -224,7 +250,7 @@ class Game extends React.Component {
                                         let combinedPoint = dozens + i;
                                         board[combinedPoint] = 'X';
                                         console.log(combinedPoint);
-                                        coords.push(combinedPoint);
+                                        coords = coords.concat(combinedPoint);
                                     }
                                     createSub = new Sub(singleSub.size, coords);
                                   
@@ -233,15 +259,10 @@ class Game extends React.Component {
                                      for(let i=this.y1; i>=this.y2; i--) {
                                          let combinedPoint = dozens + i;
                                          board[combinedPoint] = 'X';
-                                         coords.push(combinedPoint);
+                                         coords = coords.concat(combinedPoint);
                                      }
                                      createSub = new Sub(singleSub.size, coords);
                                     }
-                            //   this.setState({
-                            //       subsConfig: subsConfigHolder, 
-                            //       board:board,
-                            //       subs : this.state.subs.concat(createSub)
-                            //     })
 
                                 this.setState({
                                     subsConfig: subsConfigHolder,
@@ -267,7 +288,7 @@ class Game extends React.Component {
                     });
                 }
             } else if (this.y1 === this.y2) {
-                const coords = [];
+                let coords = [];
                 let createSub;
                 subsConfigHolder.some((singleSub, index, theArray) => {
                     if(singleSub.placed < singleSub.count) {
@@ -280,14 +301,16 @@ class Game extends React.Component {
                                 for(let i=this.x1; i<=this.x2; i++) {
                                     let combinedPoint = i*boardSizeSqrt + remainder;
                                     board[combinedPoint] = 'X';
-                                    coords.push(combinedPoint);
+                                    coords = coords.concat(combinedPoint);
                                 }
                                 createSub = new Sub(singleSub.size, coords);
                             } else {
                                 for(let i=this.x1; i>=this.x2; i--) {
                                     let combinedPoint = i*boardSizeSqrt + remainder;
                                     board[combinedPoint] = 'X';
+                                    coords = coords.concat(combinedPoint);
                                 }
+                                createSub = new Sub(singleSub.size, coords);
                             }
                             
                             this.setState({
@@ -303,23 +326,7 @@ class Game extends React.Component {
                                    } else return player;
                                }),
                             });
-
-                            // this.setState({
-                            //     subsConfig: subsConfigHolder,
-                            //     board: board,
-                            //     subs: this.state.subs.concat(createSub)
-                            // });
-
-                            // this.setState(prevState =>{
-                            //     return{
-                            //          ...prevState,
-                            //          subsConfig: subsConfigHolder
-                            //          players[0].board : board,
-                            //          subs: this.state.subs.concat(createSub)
-                            //          counter : prevState.counter +1
-                            //     }
-                            //  })
-
+                            
                         } else {
                             console.log('You have to place the current sub size');
                             this.countClicks = 0;
@@ -332,7 +339,7 @@ class Game extends React.Component {
               }
             this.countClicks = 0;
             }
-    }
+        }
 
     render() {
         console.log(this.state.players);
@@ -341,6 +348,10 @@ class Game extends React.Component {
         console.log(this.state.players[1].board);
         console.log('isPlayerOneTurn : ' + this.state.isPlayerOneTurn);
         console.log(this.state.enemyData);
+        console.log('stepNumber '+ this.state.stepNumber)
+
+        const history = this.state.players[0].history;
+        const current = history[this.state.stepNumber];
         
 
         return (
@@ -349,7 +360,7 @@ class Game extends React.Component {
                         <h1>BattleShip</h1>
                         <h4>Please select board size</h4>
                         <div className="button-selectors">
-                            <ButtonGroup color="primary" variant="contained" aria-label="outlined primary button group">
+                            <ButtonGroup variant="contained" color="primary" aria-label="contained primary button group">
                                 <Button value={10} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>10X10</Button>
                                 <Button value={14} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>14X14</Button>
                             </ButtonGroup>
@@ -377,7 +388,7 @@ class Game extends React.Component {
                         <p>{this.state.winner + ' '} Won the game!</p> 
                         : null
                    } */}
-                </div> 
+                 </div> 
                 </div>
                 <div className="boards-place">
                     {/*(My Board)Choosing ships board*/}
@@ -386,6 +397,7 @@ class Game extends React.Component {
                         subsConfig={this.state.subsConfig} 
                         status={this.state.status} 
                         board={this.state.players[0].board}
+                        // board={current.board}
                         onClick={ (i) => this.placeSubsHandler(i)}
                         subsPlaced={this.state.subsPlaced}
                         subs={this.state.subs}
@@ -393,12 +405,23 @@ class Game extends React.Component {
                         // hover={}
 
                     /> 
+                    
+                    {   !this.state.subsPlaced ?
+                        <SubsToPlaceList 
+                            status={this.state.status}
+                            subsConfig={this.state.subsConfig}
+                        /> :
+                        <HistoryList 
+                            history={this.state.players[0].history}
+                            jumpTo={(move) => this.jumpTo(move)}
+                        /> 
+                    }
 
                     {/*Playing Board(enemy board)*/}        
                     <Board 
                         boardSize={this.state.boardSize} 
                         status={this.state.status}
-                        board={this.state.players[1].board}
+                        board={current.board}
                         disabled={!this.state.subsPlaced}
                         onClick= {(i) => this.PlayingTurnHandler(i)}
                         isPlayerOneTurn={this.state.isPlayerOneTurn}
