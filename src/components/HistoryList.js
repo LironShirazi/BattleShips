@@ -15,7 +15,8 @@ const HistoryList = props => {
     return   <ButtonGroup
                 orientation="vertical"
                 color="primary"
-                aria-label="vertical outlined primary button group"
+                aria-label="vertical contained primary button group"
+                variant="text"
             >
                 {moves}
             </ButtonGroup>

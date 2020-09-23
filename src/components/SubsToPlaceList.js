@@ -9,7 +9,7 @@ const SubsToPlaceList = (props) => {
         }
         else return null;
     });
- } else return;
+ } else return null;
     return (
         <ul>
           {subsToPlace}           

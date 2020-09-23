@@ -38,5 +38,6 @@ p {
   flex-wrap: wrap;
   flex-direction: row;
   align-content: space-between;
+  /* padding-bottom: 20px; */
 }
 
