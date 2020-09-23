@@ -8,6 +8,7 @@ const io = socketio(server);
 
 
 let connections = [null, null];
+let players = [];
 
 io.on('connection', socket => {
     //find available player number
@@ -42,19 +43,19 @@ io.on('connection', socket => {
      socket.on('player-ready', playerNum => {
         connections[playerNum] = true;
         io.emit('player-clicked-ready', connections);
-        });
+    });
         
     //send to player the connections array, to check if ready or clicked start game.
     // false - they are connected but not ready, 
     // true - they are ready to place subs.
-    io.emit('player-clicked-start', connections);
+    io.emit('player-clicked-start', connections, players);
 
     // receieving  player state when ready (after set ships)
-    socket.on('player-state', (state, playerNum) => {
-        const player = { state: state , ready: true };
-        connections[playerNum] = player;
-        
-    })
+    socket.on('player-data-send', (playerData, playerNum) => {
+        players[playerNum] = playerData; // [TO CHECK] - if need or not 
+            socket.broadcast.emit('retrive-enemy-data', playerData, playerNum);
+            console.log(players);
+    });
 
     
 

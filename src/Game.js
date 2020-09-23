@@ -26,10 +26,11 @@ class Game extends React.Component {
         this.socket = null;
 
         this.state = {
-            enemyData: enemyData, 
+            // enemyData: enemyData, 
             players: [
                         this.player('Liron', Array(this.boardSize).fill(null)),
-                        this.player('Shahar', Array(this.boardSize).fill(null))
+                        {...enemyData}
+                        // this.player('Shahar', Array(this.boardSize).fill(null))
                     ],
             boardSize : 100,
             subsConfig : [
@@ -139,7 +140,6 @@ class Game extends React.Component {
     receiveAttack() {
         const i = Math.floor(Math.random() * 100);
         const playerData = {
-            ...this.state.enemyData, 
             board:[...this.state.players[0].board], 
             subs: [...this.state.players[0].subs] 
         }
@@ -198,11 +198,7 @@ class Game extends React.Component {
         const board = [...current.board];
 
         if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
-        const enemyData = {
-            ...this.state.enemyData, 
-            board:[...this.state.enemyData.board], 
-            subs: [...this.state.enemyData.subs] // clone enemy data
-        };  
+            const enemyData = {...this.state.players[1]}
         
         if(enemyData.board[i] === null) {
             board[i] = 'O';
@@ -238,8 +234,16 @@ class Game extends React.Component {
             players[1].subs = enemyData.subs; 
             this.setState( prevState => {
                 return {
-                    players : players,
-                    enemyData: enemyData,
+                    players : [
+                        ...players.slice(0,1),
+                        {
+                            ...players[1],
+                            board: board,
+                            subs: enemyData.subs
+                        }
+                    ],
+            
+                    // enemyData: enemyData,
                     isPlayerOneTurn: !prevState.isPlayerOneTurn,
                     stepNumber: players[0].history.length - 1,
                     // status: 'player-won' // CHECK ONLY
@@ -422,19 +426,37 @@ class Game extends React.Component {
         }
             
         readyClickHandler() {
+            //show spinner
             this.setState({ status: 'waiting'});
             console.log(this.playerNum);
             this.socket.emit('player-ready', this.playerNum);
-            //checks if both players ready to start match (if    subs placed)
+
+            
+            //checks if both players ready to start match (if subs placed)
+            //receive enemy data and update state in players[1]
             this.socket.on('player-clicked-ready', connections => {
-            if(connections.every(singleConnect => singleConnect === true)) {
-                this.setState({ status: 'game-started' });
-                console.log('inside both ready');
-            }
-        });
-            // after set ships, sending the state to the server (for the enemy)
-            this.socket.emit('player-state', this.state.players[0], this.playerNum);
-          
+
+                // after set ships, sending the player data to the server (for the enemy)
+                this.socket.emit('player-data-send', this.state.players[0], this.playerNum);
+              
+                //update player[1] to the enemy data
+                this.socket.on('retrive-enemy-data', (playerData,playerNum) => {
+                    console.log(this.playerNum);
+                        this.setState({
+                            players: [
+                                ...this.state.players.slice(0,1),
+                                {
+                                    ...playerData
+                                }
+                            ],
+                            // isPlayerOneTurn: !playerNum // init the turn for player 0.
+                        });
+                });
+                    //check if both clicked 'ready' to move game start
+                   if(connections.every(singleConnect => singleConnect === true)) {
+                    this.setState({ status: 'game-started'});
+                }
+            });
 
 
         }
