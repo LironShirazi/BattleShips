@@ -17,10 +17,10 @@ const StatusLog = (props) => {
                       </Button>;
             break;
         case 'waiting': 
-            phrase = <CircularProgress color="secondary" />
+            phrase =  <div className="waiting"><CircularProgress color="secondary" /> <span>Waiting for opponent...</span></div>
             break;
         case 'pre-game':
-            phrase = 'Please place on the board:';
+            phrase = <span className="pre-game">Please place subs on the board:</span>;
             break;
         case 'ready': 
             phrase = <Button
@@ -38,10 +38,11 @@ const StatusLog = (props) => {
             phrase += ", it's your turn, choose a spot to attack!";
             break;
         case 'player-won':
-            // phrase = <div></div>
             phrase = <div className="status_log"> 
-                        <span>{props.winner} Won the game!</span>  
-                        <span>Your score is: {props.score}</span> 
+                        <span>{props.isWinner ? `${props.playerOneName}, You Won`: `${props.playerTwoName}, You Lose`} the game!</span>  
+                        <span>Your score is: {props.score}   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+                            {props.playerTwoName}'s score is: {props.enemyScore}
+                        </span> 
                         <Button 
                             variant="contained" 
                             color="secondary" 

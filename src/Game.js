@@ -2,17 +2,23 @@ import React from 'react';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
 import socketio from 'socket.io-client';
-import enemyData from './util/enemyMock';
+
 import hashId from './util/hashHelperFunction';
 import Board from './Board';
 import Sub from './Sub';
 import './index.css';
+// import enemyData from './util/enemyMock';
 import StatusLog from './components/StatusLog/StatusLog';
 import SubsToPlaceList from './components/SubsToPlaceList';
 import HistoryList from './components/HistoryList';
 
+const  attackStatus = {
+    MISS : 'miss',
+    HIT : 'hit',
+    HIT_KILLED: 'hit-killed'
+}
 
-class Game extends React.Component {
+class Game extends React.PureComponent {
     constructor() {
         super();
         this.boardSize = 100;
@@ -26,86 +32,77 @@ class Game extends React.Component {
         this.socket = null;
 
         this.state = {
-            // enemyData: enemyData, 
             players: [
                         this.player('Liron', Array(this.boardSize).fill(null)),
-                        {...enemyData}
-                        // this.player('Shahar', Array(this.boardSize).fill(null))
+                        this.player('opponent', Array(this.boardSize).fill(null)),
+                        // enemyData,
+                        // enemyData
                     ],
             boardSize : 100,
             subsConfig : [
-                { name: 'Sub', size: 4, count: 1, placed: 0 },
-                { name: 'Cruiser', size: 3, count: 2, placed: 0 },
-                { name: 'Destroyer', size: 2, count: 2, placed: 0 }
+                { name: 'Sub', size: 4, count: 0, placed: 0 },
+                { name: 'Cruiser', size: 3, count: 0, placed: 0 },
+                { name: 'Destroyer', size: 2, count: 1, placed: 0 }
             ],
+            // subsPlaced: true,
             subsPlaced: false,
             status: 'game-init',
-            isPlayerOneTurn : true,
+            // status: 'game-init',
+            // isPlayerOneTurn : true,
+            isPlayerOneTurn : false,
             winner: '',
-            stepNumber: 0
+            stepNumber: 0,
+            isWinner: null // Bool but initial null
         }
     }
-
-
-    componentDidMount() {
-
-        }
 
     componentWillUnmount() {
         this.socket.close();
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        //fake enemy attack (receiving attack)
-        if(this.state.isPlayerOneTurn !== prevState.isPlayerOneTurn) {
-            if(!this.state.isPlayerOneTurn) {
-                console.log('seccond if(player 2 turn)');
-                setTimeout( () => this.receiveAttack(), 500);  
-            }
-        }
-        //   another player has connected
-            this.socket.on('player-connection', num => {
-                console.log(`Player number ${num} has connected or disconnected`);
-            });
-
-            // this.socket.on('player-clicked-start', connections => {
-            //     console.log('inside player-clicked-start');
-            //     //checkes if both players clicked start
-            //     if(connections.every(singleConnect => singleConnect === false)) {
-            //         this.setState({ status: 'pre-game'});
-            //         console.log(this.state.status);
-            //     }
-            // });
-        console.log('[componentDidUpdate]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
+    // componentDidUpdate(prevProps, prevState) {
+    //         this.socket.on('player-connection', num => {
+    //             console.log(`Player number ${num} has connected or disconnected`);
+    //         });
+    //     console.log('[componentDidUpdate]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
       
-    }
+    // }
 
     setNewGame() {
-          const subsConfig = this.state.subsConfig.map(sub => {
-              return {
-                  ...sub,
-                  placed: 0
-              };
-          });
-          const players = this.state.players.map((player,index) => {
-              return {
-                  ...player,
-                  history: [ 
+        this.setState({ status: 'waiting'});
+            //TO ADD - spinner -status waiting
+        this.socket.emit('player-rematch', this.playerNum);
+        this.socket.once('rematch-both', () => {
+
+            console.log('inside rematch-both');
+            const players = this.state.players.map(player => {
+                return {
+                    ...player,
+                    board: Array(this.boardSize).fill(null),
+                    history: [ 
                     {
                         board: Array(this.boardSize).fill(null)
                     }
                 ],
                 subs: []
-              }
-          })
-        this.setState({
-            subsConfig : subsConfig,
-            status: 'game-init',
-            stepNumber: 0,
-            subsPlaced: false,  
-            isPlayerOneTurn: true,
-            players: players,
-          });
+                }
+            });
+    
+            this.setState({
+                subsConfig : this.state.subsConfig.map(sub => {
+                    return {
+                        ...sub,
+                        placed: 0
+                    };
+                }),
+                status: 'pre-game',
+                stepNumber: 0,
+                subsPlaced: false,  
+                isPlayerOneTurn: false, 
+                players: players,
+                isWinner: null
+              });
+        });
     }
 
     player(name, board) {
@@ -124,21 +121,24 @@ class Game extends React.Component {
     }
 
     jumpTo(step) {
+        // if(this.playerName === 1) {}
         this.setState({
           stepNumber: step,
-          isPlayerOneTurn: step % 2 === 0
+          isPlayerOneTurn: step % 2 !== 0
+        //   isPlayerOneTurn: {if(this.player) step % 2 !== 0}
         });
       }
 
-    winCheck(subs) {
+    loseCheck(subs) {
        return subs.every(sub => {
             if(sub.isDead) return true;
             return false;
         });
     }
     
-    receiveAttack() {
-        const i = Math.floor(Math.random() * 100);
+    receiveAttack(i) {
+        let hitStatus = '';
+        let subsArrHolder;
         const playerData = {
             board:[...this.state.players[0].board], 
             subs: [...this.state.players[0].subs] 
@@ -146,33 +146,52 @@ class Game extends React.Component {
             // hit an empty square
             if(playerData.board[i] === null) {
                 playerData.board[i] = 'O';
-                
+                hitStatus = attackStatus.MISS;
+      
             } else if (playerData.board[i] === 'X') { // ship is hitted
                 playerData.subs.forEach(sub => { 
                     if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
                         sub.numHits ++;
-                       if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
-                          playerData.board[i] = '#';
+                        if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
+                            playerData.board[i] = '#';
+                            hitStatus = attackStatus.HIT;
                        } else {  // hitted and killed the ship
+                            playerData.board[i] = '*'
+                            hitStatus = attackStatus.HIT_KILLED; 
+                            subsArrHolder = [...sub.subCoordsArr];
                             sub.isDead = true;
-                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '*')
+                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '*') //view - self ship killed.
                         }
                     }
                 });
             }
+            this.socket.emit('attack-response', hitStatus,subsArrHolder); // response if hitted/killed or not 
+
             const players = [...this.state.players];
-            if(this.winCheck(playerData.subs)) {
-                players[1].score++; 
-                console.log('player won!');
-                this.setState({ winner : playerData.name, status:'player-won' })
-            }
+           
             players[0].board = playerData.board;
-            this.setState(prevState => {
-                return {
-                    players: players,
-                    isPlayerOneTurn: !prevState.isPlayerOneTurn
-                }
-            });
+            //player lose
+            if(this.loseCheck(playerData.subs)) {
+                players[1].score++; 
+                console.log('in lose check : players[1].score : ' , players[1].score);
+                console.log('opponenet player won!');
+                this.socket.emit('player-lose', players[1].score);
+                this.setState({ 
+                    players:players,
+                    winner : players[1].name,
+                    status:'player-won', 
+                    isPlayerOneTurn: false, 
+                    isWinner: false
+                });
+            } else {
+                // not lose yet - keep play
+                this.setState({
+                        players: players,
+                        isPlayerOneTurn: true
+                });
+            }
+            console.log('in lose check : this.state.players[1].score : ' , this.state.players[1].score);
+
     }
         
     boardSizeHandler(size) {
@@ -192,64 +211,47 @@ class Game extends React.Component {
 
     PlayingTurnHandler(i) {
         console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
-        if(this.state.isPlayerOneTurn) {
+        // if(this.state.isPlayerOneTurn) {
         const history = this.state.players[0].history.slice(0,this.state.stepNumber + 1);
         const current = history[history.length -1];
         const board = [...current.board];
+        // const board = this.state.players[1]
 
         if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
-            const enemyData = {...this.state.players[1]}
-        
-        if(enemyData.board[i] === null) {
-            board[i] = 'O';
-            enemyData.board[i] = 'O';
+
+            // send index attack to server
+            this.socket.emit('attack', i);
+            this.socket.once('response-to-player',  (hitStatus, subsArrHolder) => {
+
+                console.log('hitStatus [playingTurnHandler] response-to-player hitStatus: ' + hitStatus)
+                if(hitStatus === attackStatus.MISS) {
+                    board[i] = 'O';
+                } else if (hitStatus === attackStatus.HIT) { // ship is hitted
+                    board[i] = '#';
+                } else if(hitStatus === attackStatus.HIT_KILLED) {  // hitted and killed the ship
+                    subsArrHolder.forEach(coord => board[coord] = '*');
+                }
+            // });
             
-        } else if (enemyData.board[i] === 'X') { // ship is hitted
-            enemyData.subs.forEach(sub => { 
-                if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
-                    sub.numHits ++;
-                   if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
-                      board[i] = '#';
-                      enemyData.board[i] = '#';
-                   } else {  // hitted and killed the ship
-                        sub.isDead = true;
-                        sub.subCoordsArr.forEach(coord => board[coord] = '*')
-                         // for view purpose -  if sub is killed show last hit as *  
-                    }
-           }
-        });
-    }
-        const players = [...this.state.players];
-        //need to implement game init for new game if player won the game.
-            if(this.winCheck(enemyData.subs)) {
-                players[0].score ++; 
-                console.log('Player 1 won!')
-                this.setState({ winner: players[0].name, status: 'player-won'})
-            }
-            
+            const players = [...this.state.players];
             players[0].history = history.concat([{
-                board:board
-            }])
-            players[1].board = board;
-            players[1].subs = enemyData.subs; 
-            this.setState( prevState => {
-                return {
+                board: board
+            }]);
+            players[1].board = board; // remove if not needed.
+            this.setState({
                     players : [
-                        ...players.slice(0,1),
+                        ...this.state.players.slice(0,1),
                         {
                             ...players[1],
                             board: board,
-                            subs: enemyData.subs
+                            // subs: enemyData.subs // remove
                         }
                     ],
-            
-                    // enemyData: enemyData,
-                    isPlayerOneTurn: !prevState.isPlayerOneTurn,
+                    isPlayerOneTurn: false,
                     stepNumber: players[0].history.length - 1,
-                    // status: 'player-won' // CHECK ONLY
-                }
             });
-      }
+        });
+    //   }
     }
 
     placeSubsHandler(i) {
@@ -366,23 +368,7 @@ class Game extends React.Component {
                                     ]
                                 }
                             });
-                            // this.setState({
-                            //     subsConfig: subsConfigHolder,
-                            //     players: [ 
-                            //          ...players[1].slice(1)
-                            //     ]
-                            //     players: this.state.players.map(player => {
-                            //        if(player.name === 'Liron') {
-                            //            return { 
-                            //                ...player,
-                            //                 board:board,
-                            //                 subs: this.state.players[0].subs.concat(createSub)
-
-                            //             }
-                            //        } else return player;
-                            //    }),
-                            // });
-                            
+                        
                         } else {
                             console.log('You have to place the current sub size');
                             this.countClicks = 0;
@@ -405,12 +391,6 @@ class Game extends React.Component {
                 } else {
                     this.playerNum = num;
                     console.log('playerNum: '+ this.playerNum);
-
-                    if(num === 1) {
-                        this.currentPlayer = 'enemy';
-                        // console.log('player num'+ this.playerNum);
-                        //    this.setState({isPlayerOneTurn: false});
-                    }
                     this.setState({ status: 'waiting'});
                 }
              }); 
@@ -423,57 +403,85 @@ class Game extends React.Component {
                     console.log(this.state.status);
                 }
             });  
-        }
+       
+            this.socket.on('check-attack', index => {
+                console.log('in check attack: ' + index);
+                this.receiveAttack(index);
+            });
+
+            this.socket.on('player-won', winnerScore => {
+                console.log('inside socket.on(player-won)before state update');
+                console.log('[player-won] winnerScore: ' + winnerScore)
+
+                const players = [...this.state.players];
+                players[0].score = winnerScore;
+                console.log('[player-won] players[0].winnerScore: ' + players[0].score)
+
+                this.setState({
+                        players: players,
+                        isWinner: true,
+                        status: 'player-won'
+                    });
+                    console.log('[player-won] this.state.players[0].winnerScore: ' +this.state.players[0].score)
+
+            });
+            console.log('player[0] isWinner : '+ this.state.players[0].isWinner);
+        };
             
         readyClickHandler() {
-            //show spinner
             this.setState({ status: 'waiting'});
             console.log(this.playerNum);
             this.socket.emit('player-ready', this.playerNum);
 
-            
             //checks if both players ready to start match (if subs placed)
             //receive enemy data and update state in players[1]
-            this.socket.on('player-clicked-ready', connections => {
-
+             this.socket.on('player-clicked-ready', connections => {
                 // after set ships, sending the player data to the server (for the enemy)
-                this.socket.emit('player-data-send', this.state.players[0], this.playerNum);
+                this.socket.emit('player-data-send', this.state.players[0].name , this.playerNum);
               
-                //update player[1] to the enemy data
-                this.socket.on('retrive-enemy-data', (playerData,playerNum) => {
-                    console.log(this.playerNum);
-                        this.setState({
+                //create player[1] update his name and create clean board for playing.
+                this.socket.on('retrive-enemy-data', (playerName, playerNum) => {
+                    console.log('my player number: ' + this.playerNum);
+                    console.log('enemy player number: ' + playerNum);
+                       
+                    this.setState({
                             players: [
                                 ...this.state.players.slice(0,1),
                                 {
-                                    ...playerData
+                                    ...this.state.players[1],
+                                    board: Array(this.boardSize).fill(null)
                                 }
+                                // this.player(playerName, Array(this.boardSize).fill(null)),
                             ],
-                            // isPlayerOneTurn: !playerNum // init the turn for player 0.
+                            // playerNum: !playerNum,
+                            isPlayerOneTurn: playerNum === 1
+                            // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
+                            
                         });
+                        console.log('isPlayerOneTurn: enemy playerNum ' + playerNum + 'playerNum = ' + playerNum)
+                        console.log('isPlayerOneTurn inside socket '+ this.state.isPlayerOneTurn);
                 });
                     //check if both clicked 'ready' to move game start
                    if(connections.every(singleConnect => singleConnect === true)) {
-                    this.setState({ status: 'game-started'});
-                }
+                       this.setState({ status: 'game-started'});
+                   }
             });
-
-
         }
             
     render() {
         console.log(this.state.players);
-        console.log('status : '+ this.state.status)
+        console.log('status : '+ this.state.status);
         console.log(this.state.players[0].board);
         console.log(this.state.players[1].board);
         console.log('isPlayerOneTurn : ' + this.state.isPlayerOneTurn);
-        console.log(this.state.enemyData);
-        console.log('stepNumber '+ this.state.stepNumber)
+        console.log('stepNumber '+ this.state.stepNumber);
 
         const history = this.state.players[0].history;
         const current = history[this.state.stepNumber];
-        
 
+        // console.log('current ' , JSON.stringify(current));
+        // console.log('stepNumber after current' + this.state.stepNumber);
+        
         return (
             <div className="main">
                 <div className="main-header">
@@ -492,13 +500,14 @@ class Game extends React.Component {
                         status={this.state.status}
                         onClickStartGame={() => this.clickStartGameHandler()}
                         onClickReady={() => this.readyClickHandler()}
+                        playAgainOnClick={this.setNewGame}
                         isPlayerOneTurn={this.state.isPlayerOneTurn}
                         playerOneName={this.state.players[0].name} 
                         playerTwoName={this.state.players[1].name} 
                         winner={this.state.winner}
-                        playAgainOnClick={this.setNewGame}
                         score={this.state.players[0].score}
-
+                        enemyScore={this.state.players[1].score}
+                        isWinner={this.state.isWinner}
                     />
                  </div> 
                 </div>
@@ -506,14 +515,11 @@ class Game extends React.Component {
                     {/*(My Board)Choosing ships board*/}
                     <Board 
                         boardSize={this.state.boardSize} 
-                        subsConfig={this.state.subsConfig} 
                         status={this.state.status} 
                         board={this.state.players[0].board}
                         // board={current.board}
                         onClick={ (i) => this.placeSubsHandler(i)}
-                        subsPlaced={this.state.subsPlaced}
-                        subs={this.state.subs}
-                        disabled={this.state.subsPlaced}
+                        disabled={this.state.status !== 'pre-game'}
                     /> 
                     
                     {   !this.state.subsPlaced ?
@@ -532,8 +538,9 @@ class Game extends React.Component {
                         boardSize={this.state.boardSize} 
                         status={this.state.status}
                         board={current.board}
-                        disabled={!this.state.subsPlaced}
-                        onClick= {(i) => this.PlayingTurnHandler(i)}
+                        // disabled={!this.state.subsPlaced}
+                        disabled={!this.state.isPlayerOneTurn}
+                        onClick={(i) => this.PlayingTurnHandler(i)}
                         isPlayerOneTurn={this.state.isPlayerOneTurn}
                     />    
                 </div>

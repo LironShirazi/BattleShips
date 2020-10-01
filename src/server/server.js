@@ -13,13 +13,14 @@ let players = [];
 io.on('connection', socket => {
     //find available player number
     let playerIndex = -1;
-    for(const i in connections) {
+
+    for(let i=0 ; i<connections.length; i++) {
         if(connections[i] === null) {
             playerIndex = i;
             break;
         }
     }
-    
+
     //Tell the connecting player his player number
     socket.emit('player-number', playerIndex);
     console.log(`player ${playerIndex} has connected to server.`);
@@ -41,8 +42,11 @@ io.on('connection', socket => {
 
      //update player is ready.
      socket.on('player-ready', playerNum => {
+        console.log('[player-ready]-playerNum : ' + playerNum);
         connections[playerNum] = true;
-        io.emit('player-clicked-ready', connections);
+        if (connections.every(singleConnect => singleConnect === true) && connections.length === 2) {
+            io.emit('player-clicked-ready', connections);
+        }
     });
         
     //send to player the connections array, to check if ready or clicked start game.
@@ -50,16 +54,45 @@ io.on('connection', socket => {
     // true - they are ready to place subs.
     io.emit('player-clicked-start', connections, players);
 
-    // receieving  player state when ready (after set ships)
-    socket.on('player-data-send', (playerData, playerNum) => {
-        players[playerNum] = playerData; // [TO CHECK] - if need or not 
-            socket.broadcast.emit('retrive-enemy-data', playerData, playerNum);
-            console.log(players);
+    // receieving  player data when ready (after set ships)
+    socket.on('player-data-send', (playerName, playerNum) => {
+        // players[playerNum] = playerName; // [TO CHECK] - if need or not 
+            socket.broadcast.emit('retrive-enemy-data', playerName, playerNum);
     });
 
-    
 
-     
+    //------------------ATTACK Section--------------------------------
+    socket.on('attack', i => {
+        socket.broadcast.emit('check-attack', i);
+        console.log('inside ("attack") i : ' + i);
+    });
+
+    //----------------Response attack to client--------------
+    socket.on('attack-response', (hitStatus, subsArrHolder) => {
+        if(subsArrHolder) {
+        socket.broadcast.emit('response-to-player', hitStatus, subsArrHolder);
+        } else {
+            socket.broadcast.emit('response-to-player', hitStatus);
+        }
+        console.log('inside on("response-attack") hitStatus : ' + hitStatus);
+    })
+
+    //Win process - Game ended
+    socket.on('player-lose', winnerScore => {
+        socket.broadcast.emit('player-won', winnerScore);
+        connections = [null, null];
+        console.log('winnerScore', winnerScore);
+    });
+
+    //Rematch 
+    socket.on('player-rematch', playerNum => {
+        connections[playerNum] = false;
+        if (connections.every(singleConnect => singleConnect === false)) {
+            io.emit('rematch-both');
+            console.log('inside player-rematch');
+        }
+    }); 
+  
 });
 
 server.listen(PORT, () => console.log(`listenning on port ${PORT}`))
