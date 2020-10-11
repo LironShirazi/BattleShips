@@ -1,14 +1,15 @@
 const express = require('express');
 const http = require('http');
-const PORT = process.env.PORT || 4000 
+const PORT = process.env.PORT || 4000;
 const socketio = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
+const os = require('os');
 
 
 let connections = [null, null];
-let players = [];
+// let players = [];
 
 io.on('connection', socket => {
     //find available player number
@@ -22,7 +23,7 @@ io.on('connection', socket => {
     }
 
     //Tell the connecting player his player number
-    socket.emit('player-number', playerIndex);
+    socket.emit('player-number', playerIndex, os.userInfo().username);
     console.log(`player ${playerIndex} has connected to server.`);
 
     // setting player 
@@ -37,7 +38,6 @@ io.on('connection', socket => {
      socket.on('disconnect', () => {
         console.log(`player ${playerIndex} disconnected form the server.`);
         connections[playerIndex] = null;
-
      });
 
      //update player is ready.
@@ -45,14 +45,14 @@ io.on('connection', socket => {
         console.log('[player-ready]-playerNum : ' + playerNum);
         connections[playerNum] = true;
         if (connections.every(singleConnect => singleConnect === true) && connections.length === 2) {
-            io.emit('player-clicked-ready', connections);
+            io.emit('player-clicked-ready', connections, os.userInfo().username);
         }
     });
         
     //send to player the connections array, to check if ready or clicked start game.
     // false - they are connected but not ready, 
     // true - they are ready to place subs.
-    io.emit('player-clicked-start', connections, players);
+    io.emit('player-clicked-start', connections);
 
     // receieving  player data when ready (after set ships)
     socket.on('player-data-send', (playerName, playerNum) => {

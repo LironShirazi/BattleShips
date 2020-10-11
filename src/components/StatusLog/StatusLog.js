@@ -9,12 +9,15 @@ const StatusLog = (props) => {
     switch(props.status) {
         default: 
         case 'game-init':
-            phrase = <Button
+            phrase = <div>
+                    {/* <input type="text" value={this.state.value} onChange={this.handleChange} /> */}
+                    <Button
                         variant="contained" 
                         color="secondary"     
                         onClick={props.onClickStartGame}>
                             Start game!
-                      </Button>;
+                    </Button>
+            </div>  
             break;
         case 'waiting': 
             phrase =  <div className="waiting"><CircularProgress color="secondary" /> <span>Waiting for opponent...</span></div>
@@ -32,10 +35,13 @@ const StatusLog = (props) => {
             break;
         case 'game-started':
             props.isPlayerOneTurn ?
-              phrase = props.playerOneName :
-              phrase = props.playerTwoName
+              phrase = `${props.playerOneName}, it's your turn, choose a spot to attack!`  :
+              phrase = <div className="waiting">
+                  Waiting for {props.playerTwoName} to play  
+                  <CircularProgress color="secondary" />
+              </div>;
         
-            phrase += ", it's your turn, choose a spot to attack!";
+            // phrase += ", it's your turn, choose a spot to attack!";
             break;
         case 'player-won':
             phrase = <div className="status_log"> 

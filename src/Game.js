@@ -35,8 +35,6 @@ class Game extends React.PureComponent {
             players: [
                         this.player('Liron', Array(this.boardSize).fill(null)),
                         this.player('opponent', Array(this.boardSize).fill(null)),
-                        // enemyData,
-                        // enemyData
                     ],
             boardSize : 100,
             subsConfig : [
@@ -59,6 +57,9 @@ class Game extends React.PureComponent {
     componentWillUnmount() {
         this.socket.close();
     }
+    // componentDidMount() {
+    //     this.socket.e 
+    // }
 
     // componentDidUpdate(prevProps, prevState) {
     //         this.socket.on('player-connection', num => {
@@ -385,17 +386,28 @@ class Game extends React.PureComponent {
 
         clickStartGameHandler() {
            this.socket = socketio.connect('http://localhost:4000');
-            this.socket.on('player-number', num => {
+            this.socket.once('player-number', (num, playerName) => {
                 if(num === -1) {
                     alert('Sorry, server is full.');
                 } else {
                     this.playerNum = num;
                     console.log('playerNum: '+ this.playerNum);
-                    this.setState({ status: 'waiting'});
+                    this.setState({ 
+                        status: 'waiting', 
+                        players: [
+                        {
+                            ...this.state.players[0],
+                            name: playerName
+                        },
+                        {
+                            ...this.state.players[1]
+                        }
+                    ]
+                    });
                 }
-             }); 
+            }); 
              
-            this.socket.on('player-clicked-start', connections => {
+            this.socket.on('player-clicked-start', (connections) => {
                 console.log('inside player-clicked-start');
                 //checkes if both players clicked start
                 if(connections.every(singleConnect => singleConnect === false)) {
@@ -435,29 +447,47 @@ class Game extends React.PureComponent {
 
             //checks if both players ready to start match (if subs placed)
             //receive enemy data and update state in players[1]
-             this.socket.on('player-clicked-ready', connections => {
+             this.socket.once('player-clicked-ready', (connections, name) => {
+
                 // after set ships, sending the player data to the server (for the enemy)
-                this.socket.emit('player-data-send', this.state.players[0].name , this.playerNum);
+                this.socket.emit('player-data-send', name , this.playerNum);
+                // this.socket.emit('player-data-send', this.state.players[0].name , this.playerNum);
               
                 //create player[1] update his name and create clean board for playing.
-                this.socket.on('retrive-enemy-data', (playerName, playerNum) => {
+                this.socket.once('retrive-enemy-data', (playerName, playerNum) => {
                     console.log('my player number: ' + this.playerNum);
                     console.log('enemy player number: ' + playerNum);
-                       
+                    console.log('playerName from server' + playerName);
+                       let players = [...this.state.players];
+                       players[1].board = Array(this.boardSize).fill(null);
+                       players[1].name = playerName;
                     this.setState({
-                            players: [
-                                ...this.state.players.slice(0,1),
-                                {
-                                    ...this.state.players[1],
-                                    board: Array(this.boardSize).fill(null)
-                                }
-                                // this.player(playerName, Array(this.boardSize).fill(null)),
-                            ],
-                            // playerNum: !playerNum,
-                            isPlayerOneTurn: playerNum === 1
-                            // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
+                        players: players,
+                            // this.player(playerName, Array(this.boardSize).fill(null)),
+
+                        // playerNum: !playerNum,
+                        isPlayerOneTurn: playerNum === 1
+                        // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
+                        
+                    });
+                    // this.setState({
+                    //         players: [
+                    //             {
+                    //                 ...this.state.players.slice(0,1),
+                    //                 name: playerName
+                    //             },
+
+                    //             {
+                    //                 ...this.state.players[1],
+                    //                 board: Array(this.boardSize).fill(null)
+                    //             }
+                    //             // this.player(playerName, Array(this.boardSize).fill(null)),
+                    //         ],
+                    //         // playerNum: !playerNum,
+                    //         isPlayerOneTurn: playerNum === 1
+                    //         // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
                             
-                        });
+                    //     });
                         console.log('isPlayerOneTurn: enemy playerNum ' + playerNum + 'playerNum = ' + playerNum)
                         console.log('isPlayerOneTurn inside socket '+ this.state.isPlayerOneTurn);
                 });
