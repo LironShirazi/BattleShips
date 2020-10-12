@@ -4,11 +4,11 @@
     flex-wrap: wrap;
     height: 35%;
     width: 35%;
+    color: #fff;
   }
   
 .boards-place {
   margin-top: 1.5rem;
-
   display: flex;
   flex-direction: row;
   justify-content: space-around;

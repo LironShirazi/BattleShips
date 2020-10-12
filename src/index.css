@@ -1,11 +1,10 @@
-
-
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
 
 body {
+  background-color: #E9EAED;;
   font: 1rem 'Montserrat', sans-serif;
   /* font: 14px "Century Gothic", Futura, sans-serif; */
   margin: 20px;
@@ -38,6 +37,18 @@ p {
   flex-wrap: wrap;
   flex-direction: row;
   align-content: space-between;
-  /* padding-bottom: 20px; */
 }
 
+.logo {
+  width: 500px;
+}
+
+.board-header {
+  font-size: 24px;
+  font-weight: 600;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+ 
+}

@@ -2,12 +2,11 @@ import React from 'react';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
 import socketio from 'socket.io-client';
-
 import hashId from './util/hashHelperFunction';
 import Board from './Board';
 import Sub from './Sub';
+import mainLogo from './util/banner.png';
 import './index.css';
-// import enemyData from './util/enemyMock';
 import StatusLog from './components/StatusLog/StatusLog';
 import SubsToPlaceList from './components/SubsToPlaceList';
 import HistoryList from './components/HistoryList';
@@ -38,15 +37,12 @@ class Game extends React.PureComponent {
                     ],
             boardSize : 100,
             subsConfig : [
-                { name: 'Sub', size: 4, count: 0, placed: 0 },
-                { name: 'Cruiser', size: 3, count: 0, placed: 0 },
-                { name: 'Destroyer', size: 2, count: 1, placed: 0 }
+                { name: 'Sub', size: 4, count: 1, placed: 0 },
+                { name: 'Cruiser', size: 3, count: 2, placed: 0 },
+                { name: 'Destroyer', size: 2, count: 2, placed: 0 }
             ],
-            // subsPlaced: true,
             subsPlaced: false,
             status: 'game-init',
-            // status: 'game-init',
-            // isPlayerOneTurn : true,
             isPlayerOneTurn : false,
             winner: '',
             stepNumber: 0,
@@ -57,21 +53,10 @@ class Game extends React.PureComponent {
     componentWillUnmount() {
         this.socket.close();
     }
-    // componentDidMount() {
-    //     this.socket.e 
-    // }
-
-    // componentDidUpdate(prevProps, prevState) {
-    //         this.socket.on('player-connection', num => {
-    //             console.log(`Player number ${num} has connected or disconnected`);
-    //         });
-    //     console.log('[componentDidUpdate]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
-      
-    // }
 
     setNewGame() {
         this.setState({ status: 'waiting'});
-            //TO ADD - spinner -status waiting
+
         this.socket.emit('player-rematch', this.playerNum);
         this.socket.once('rematch-both', () => {
 
@@ -122,11 +107,9 @@ class Game extends React.PureComponent {
     }
 
     jumpTo(step) {
-        // if(this.playerName === 1) {}
         this.setState({
           stepNumber: step,
           isPlayerOneTurn: step % 2 !== 0
-        //   isPlayerOneTurn: {if(this.player) step % 2 !== 0}
         });
       }
 
@@ -136,7 +119,7 @@ class Game extends React.PureComponent {
             return false;
         });
     }
-    
+
     receiveAttack(i) {
         let hitStatus = '';
         let subsArrHolder;
@@ -146,7 +129,7 @@ class Game extends React.PureComponent {
         }
             // hit an empty square
             if(playerData.board[i] === null) {
-                playerData.board[i] = 'O';
+                playerData.board[i] = '·';
                 hitStatus = attackStatus.MISS;
       
             } else if (playerData.board[i] === 'X') { // ship is hitted
@@ -154,14 +137,14 @@ class Game extends React.PureComponent {
                     if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
                         sub.numHits ++;
                         if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
-                            playerData.board[i] = '#';
+                            playerData.board[i] = 'X';
                             hitStatus = attackStatus.HIT;
                        } else {  // hitted and killed the ship
-                            playerData.board[i] = '*'
+                            playerData.board[i] = '❌'
                             hitStatus = attackStatus.HIT_KILLED; 
                             subsArrHolder = [...sub.subCoordsArr];
                             sub.isDead = true;
-                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '*') //view - self ship killed.
+                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '❌') //view - self ship killed.
                         }
                     }
                 });
@@ -212,11 +195,9 @@ class Game extends React.PureComponent {
 
     PlayingTurnHandler(i) {
         console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
-        // if(this.state.isPlayerOneTurn) {
         const history = this.state.players[0].history.slice(0,this.state.stepNumber + 1);
         const current = history[history.length -1];
         const board = [...current.board];
-        // const board = this.state.players[1]
 
         if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
 
@@ -226,13 +207,12 @@ class Game extends React.PureComponent {
 
                 console.log('hitStatus [playingTurnHandler] response-to-player hitStatus: ' + hitStatus)
                 if(hitStatus === attackStatus.MISS) {
-                    board[i] = 'O';
+                    board[i] = '·';
                 } else if (hitStatus === attackStatus.HIT) { // ship is hitted
-                    board[i] = '#';
+                    board[i] = 'X';
                 } else if(hitStatus === attackStatus.HIT_KILLED) {  // hitted and killed the ship
-                    subsArrHolder.forEach(coord => board[coord] = '*');
+                    subsArrHolder.forEach(coord => board[coord] = '❌');
                 }
-            // });
             
             const players = [...this.state.players];
             players[0].history = history.concat([{
@@ -245,14 +225,12 @@ class Game extends React.PureComponent {
                         {
                             ...players[1],
                             board: board,
-                            // subs: enemyData.subs // remove
                         }
                     ],
                     isPlayerOneTurn: false,
                     stepNumber: players[0].history.length - 1,
             });
         });
-    //   }
     }
 
     placeSubsHandler(i) {
@@ -369,7 +347,6 @@ class Game extends React.PureComponent {
                                     ]
                                 }
                             });
-                        
                         } else {
                             console.log('You have to place the current sub size');
                             this.countClicks = 0;
@@ -422,12 +399,8 @@ class Game extends React.PureComponent {
             });
 
             this.socket.on('player-won', winnerScore => {
-                console.log('inside socket.on(player-won)before state update');
-                console.log('[player-won] winnerScore: ' + winnerScore)
-
                 const players = [...this.state.players];
                 players[0].score = winnerScore;
-                console.log('[player-won] players[0].winnerScore: ' + players[0].score)
 
                 this.setState({
                         players: players,
@@ -435,9 +408,7 @@ class Game extends React.PureComponent {
                         status: 'player-won'
                     });
                     console.log('[player-won] this.state.players[0].winnerScore: ' +this.state.players[0].score)
-
             });
-            console.log('player[0] isWinner : '+ this.state.players[0].isWinner);
         };
             
         readyClickHandler() {
@@ -463,31 +434,8 @@ class Game extends React.PureComponent {
                        players[1].name = playerName;
                     this.setState({
                         players: players,
-                            // this.player(playerName, Array(this.boardSize).fill(null)),
-
-                        // playerNum: !playerNum,
-                        isPlayerOneTurn: playerNum === 1
-                        // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
-                        
+                        isPlayerOneTurn: playerNum === 1                  
                     });
-                    // this.setState({
-                    //         players: [
-                    //             {
-                    //                 ...this.state.players.slice(0,1),
-                    //                 name: playerName
-                    //             },
-
-                    //             {
-                    //                 ...this.state.players[1],
-                    //                 board: Array(this.boardSize).fill(null)
-                    //             }
-                    //             // this.player(playerName, Array(this.boardSize).fill(null)),
-                    //         ],
-                    //         // playerNum: !playerNum,
-                    //         isPlayerOneTurn: playerNum === 1
-                    //         // isPlayerOneTurn: Boolean(playerNum) // init the turn for player 0. because the player num of enemy 1 is true and the init turn is player 0 to be true.   
-                            
-                    //     });
                         console.log('isPlayerOneTurn: enemy playerNum ' + playerNum + 'playerNum = ' + playerNum)
                         console.log('isPlayerOneTurn inside socket '+ this.state.isPlayerOneTurn);
                 });
@@ -508,22 +456,20 @@ class Game extends React.PureComponent {
 
         const history = this.state.players[0].history;
         const current = history[this.state.stepNumber];
-
-        // console.log('current ' , JSON.stringify(current));
-        // console.log('stepNumber after current' + this.state.stepNumber);
         
         return (
             <div className="main">
                 <div className="main-header">
-                        <h1>BattleShip</h1>
+                    <div>
+                        <img  src={mainLogo} className="logo" alt="BattleShipLOGO"/>
+                    </div>
+
                         <h4>Please select board size</h4>
                         <div className="button-selectors">
                             <ButtonGroup color="primary" aria-label="outlined primary button group">
                                 <Button value={10} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>10X10</Button>
                                 <Button value={14} onClick={(e) => this.boardSizeHandler(e.currentTarget.value)}>14X14</Button>
                             </ButtonGroup>
-                            {/* <button value={10} onClick={(e) => this.boardSizeHandler(e.target.value)}>10X10</button>
-                            <button value={14} onClick={(e) => this.boardSizeHandler(e.target.value)}>14X14</button> */}
                         </div>
                 <div className="status_log">
                     <StatusLog 
@@ -540,14 +486,16 @@ class Game extends React.PureComponent {
                         isWinner={this.state.isWinner}
                     />
                  </div> 
+                    <div className="board-header">
+                        <span>My Ships</span>
+                        <span>Enemy Ships</span>
+                    </div>
                 </div>
                 <div className="boards-place">
-                    {/*(My Board)Choosing ships board*/}
                     <Board 
                         boardSize={this.state.boardSize} 
                         status={this.state.status} 
                         board={this.state.players[0].board}
-                        // board={current.board}
                         onClick={ (i) => this.placeSubsHandler(i)}
                         disabled={this.state.status !== 'pre-game'}
                     /> 
@@ -562,13 +510,10 @@ class Game extends React.PureComponent {
                             jumpTo={(move) => this.jumpTo(move)}
                         /> 
                     }
-
-                    {/*Playing Board(enemy board)*/}        
                     <Board 
                         boardSize={this.state.boardSize} 
                         status={this.state.status}
                         board={current.board}
-                        // disabled={!this.state.subsPlaced}
                         disabled={!this.state.isPlayerOneTurn}
                         onClick={(i) => this.PlayingTurnHandler(i)}
                         isPlayerOneTurn={this.state.isPlayerOneTurn}
