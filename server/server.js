@@ -1,11 +1,25 @@
 const express = require('express');
 const http = require('http');
-const PORT = process.env.PORT || 4000;
+const port = process.env.PORT || 4000;
 const socketio = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 const os = require('os');
+const path = require('path');
+
+app.use(express.static(path.join(__dirname,'..' ,'build')));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+// const publicPath = path.join(__dirname, '..', 'public');
+// app.use(express.static(publicPath));
+// console.log(publicPath);
+
+// app.use('*',  (req, res) => {
+//     res.sendFile(path.join(publicPath, 'index.html'));
+// });
 
 
 let connections = [null, null];
@@ -95,4 +109,4 @@ io.on('connection', socket => {
   
 });
 
-server.listen(PORT, () => console.log(`listenning on port ${PORT}`))
+server.listen(port, () => console.log(`listenning on port ${port}`))

@@ -60,7 +60,7 @@ class Game extends React.PureComponent {
         this.socket.emit('player-rematch', this.playerNum);
         this.socket.once('rematch-both', () => {
 
-            console.log('inside rematch-both');
+            // console.log('inside rematch-both');
             const players = this.state.players.map(player => {
                 return {
                     ...player,
@@ -157,8 +157,8 @@ class Game extends React.PureComponent {
             //player lose
             if(this.loseCheck(playerData.subs)) {
                 players[1].score++; 
-                console.log('in lose check : players[1].score : ' , players[1].score);
-                console.log('opponenet player won!');
+                // console.log('in lose check : players[1].score : ' , players[1].score);
+                // console.log('opponenet player won!');
                 this.socket.emit('player-lose', players[1].score);
                 this.setState({ 
                     players:players,
@@ -174,7 +174,7 @@ class Game extends React.PureComponent {
                         isPlayerOneTurn: true
                 });
             }
-            console.log('in lose check : this.state.players[1].score : ' , this.state.players[1].score);
+            // console.log('in lose check : this.state.players[1].score : ' , this.state.players[1].score);
 
     }
         
@@ -194,7 +194,7 @@ class Game extends React.PureComponent {
     }
 
     PlayingTurnHandler(i) {
-        console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
+        // console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
         const history = this.state.players[0].history.slice(0,this.state.stepNumber + 1);
         const current = history[history.length -1];
         const board = [...current.board];
@@ -205,7 +205,7 @@ class Game extends React.PureComponent {
             this.socket.emit('attack', i);
             this.socket.once('response-to-player',  (hitStatus, subsArrHolder) => {
 
-                console.log('hitStatus [playingTurnHandler] response-to-player hitStatus: ' + hitStatus)
+                // console.log('hitStatus [playingTurnHandler] response-to-player hitStatus: ' + hitStatus)
                 if(hitStatus === attackStatus.MISS) {
                     board[i] = '·';
                 } else if (hitStatus === attackStatus.HIT) { // ship is hitted
@@ -251,7 +251,7 @@ class Game extends React.PureComponent {
             if(this.x1 === this.x2) {
                if(this.y1 === this.y2) {
                    this.countClicks = 0; 
-                   console.log('You can not choose the same square. Try again.');
+                //    console.log('You can not choose the same square. Try again.');
                    return;
                 } else {
                     //two legal clicks made 
@@ -260,7 +260,7 @@ class Game extends React.PureComponent {
                      subsConfigHolder.some((singleSub, index, theArray) => {
                         if (singleSub.placed < singleSub.count) {
                             if ((Math.abs(this.y1 - this.y2) +1) === singleSub.size) {
-                                console.log('set the ship!');
+                                // console.log('set the ship!');
                                 theArray[index].placed ++;
                                 
                                 // ship selected from left to right on the same row click
@@ -269,7 +269,6 @@ class Game extends React.PureComponent {
                                     for(let i=this.y1; i<=this.y2;i++) {
                                         let combinedPoint = dozens + i;
                                         board[combinedPoint] = 'X';
-                                        console.log(combinedPoint);
                                         coords = coords.concat(combinedPoint);
                                     }
                                     createSub = new Sub(singleSub.size, coords);
@@ -314,7 +313,6 @@ class Game extends React.PureComponent {
                 subsConfigHolder.some((singleSub, index, theArray) => {
                     if(singleSub.placed < singleSub.count) {
                         if (Math.abs(this.x1 - this.x2) +1 === singleSub.size) {
-                            console.log('set the ship!');
                             theArray[index].placed ++;
 
                             let remainder = this.y1;
@@ -348,7 +346,6 @@ class Game extends React.PureComponent {
                                 }
                             });
                         } else {
-                            console.log('You have to place the current sub size');
                             this.countClicks = 0;
                             return true;
                         }
@@ -362,13 +359,13 @@ class Game extends React.PureComponent {
         }
 
         clickStartGameHandler() {
-           this.socket = socketio.connect('http://localhost:4000');
+           this.socket = socketio.connect(process.env.REACT_APP_BACKEND_URL);
             this.socket.once('player-number', (num, playerName) => {
                 if(num === -1) {
                     alert('Sorry, server is full.');
                 } else {
                     this.playerNum = num;
-                    console.log('playerNum: '+ this.playerNum);
+                    // console.log('playerNum: '+ this.playerNum);
                     this.setState({ 
                         status: 'waiting', 
                         players: [
@@ -385,16 +382,14 @@ class Game extends React.PureComponent {
             }); 
              
             this.socket.on('player-clicked-start', (connections) => {
-                console.log('inside player-clicked-start');
+                // console.log('inside player-clicked-start');
                 //checkes if both players clicked start
                 if(connections.every(singleConnect => singleConnect === false)) {
                     this.setState({ status: 'pre-game'});
-                    console.log(this.state.status);
                 }
             });  
        
             this.socket.on('check-attack', index => {
-                console.log('in check attack: ' + index);
                 this.receiveAttack(index);
             });
 
@@ -407,13 +402,12 @@ class Game extends React.PureComponent {
                         isWinner: true,
                         status: 'player-won'
                     });
-                    console.log('[player-won] this.state.players[0].winnerScore: ' +this.state.players[0].score)
             });
         };
             
         readyClickHandler() {
             this.setState({ status: 'waiting'});
-            console.log(this.playerNum);
+            // console.log(this.playerNum);
             this.socket.emit('player-ready', this.playerNum);
 
             //checks if both players ready to start match (if subs placed)
@@ -426,9 +420,9 @@ class Game extends React.PureComponent {
               
                 //create player[1] update his name and create clean board for playing.
                 this.socket.once('retrive-enemy-data', (playerName, playerNum) => {
-                    console.log('my player number: ' + this.playerNum);
-                    console.log('enemy player number: ' + playerNum);
-                    console.log('playerName from server' + playerName);
+                    // console.log('my player number: ' + this.playerNum);
+                    // console.log('enemy player number: ' + playerNum);
+                    // console.log('playerName from server' + playerName);
                        let players = [...this.state.players];
                        players[1].board = Array(this.boardSize).fill(null);
                        players[1].name = playerName;
@@ -436,8 +430,8 @@ class Game extends React.PureComponent {
                         players: players,
                         isPlayerOneTurn: playerNum === 1                  
                     });
-                        console.log('isPlayerOneTurn: enemy playerNum ' + playerNum + 'playerNum = ' + playerNum)
-                        console.log('isPlayerOneTurn inside socket '+ this.state.isPlayerOneTurn);
+                        // console.log('isPlayerOneTurn: enemy playerNum ' + playerNum + 'playerNum = ' + playerNum)
+                        // console.log('isPlayerOneTurn inside socket '+ this.state.isPlayerOneTurn);
                 });
                     //check if both clicked 'ready' to move game start
                    if(connections.every(singleConnect => singleConnect === true)) {
@@ -447,16 +441,9 @@ class Game extends React.PureComponent {
         }
             
     render() {
-        console.log(this.state.players);
-        console.log('status : '+ this.state.status);
-        console.log(this.state.players[0].board);
-        console.log(this.state.players[1].board);
-        console.log('isPlayerOneTurn : ' + this.state.isPlayerOneTurn);
-        console.log('stepNumber '+ this.state.stepNumber);
-
+        // console.log(this.state.players);
         const history = this.state.players[0].history;
         const current = history[this.state.stepNumber];
-        
         return (
             <div className="main">
                 <div className="main-header">
