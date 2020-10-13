@@ -359,7 +359,7 @@ class Game extends React.PureComponent {
         }
 
         clickStartGameHandler() {
-           this.socket = socketio.connect(process.env.REACT_APP_LOCALHOST);
+           this.socket = socketio.connect(process.env.REACT_APP_BACKEND_URL);
             this.socket.once('player-number', (num, playerName) => {
                 if(num === -1) {
                     alert('Sorry, server is full.');
