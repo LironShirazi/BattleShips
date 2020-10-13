@@ -5,14 +5,30 @@ const socketio = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
-const os = require('os');
 const path = require('path');
+const compression = require('compression');
+const morgan = require('morgan');
 
-app.use(express.static(path.join(__dirname,'..' ,'build')));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
+let userName = process.env.userName;
+console.log(userName);
+
+
+const dev = app.get('env') !== 'production';
+if(!dev) {
+    app.disable('x-powered-by');
+    app.use(compression());
+    app.use(morgan('common'));
+
+    app.use(express.static(path.join(__dirname,'..' ,'build')));
+    
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    });
+} 
+if(dev) {
+    app.use(morgan('dev'));
+}
 
 // const publicPath = path.join(__dirname, '..', 'public');
 // app.use(express.static(publicPath));
@@ -27,6 +43,7 @@ let connections = [null, null];
 // let players = [];
 
 io.on('connection', socket => {
+    // console.log(username);
     //find available player number
     let playerIndex = -1;
 
@@ -38,7 +55,10 @@ io.on('connection', socket => {
     }
 
     //Tell the connecting player his player number
-    socket.emit('player-number', playerIndex, os.userInfo().username);
+    // socket.emit('player-number', playerIndex, os.userInfo().username);
+    socket.emit('player-number', playerIndex, userName);
+    console.log('userName is: ' + userName);
+
     console.log(`player ${playerIndex} has connected to server.`);
 
     // setting player 
@@ -60,7 +80,9 @@ io.on('connection', socket => {
         console.log('[player-ready]-playerNum : ' + playerNum);
         connections[playerNum] = true;
         if (connections.every(singleConnect => singleConnect === true) && connections.length === 2) {
-            io.emit('player-clicked-ready', connections, os.userInfo().username);
+            // io.emit('player-clicked-ready', connections, os.userInfo().username);
+            io.emit('player-clicked-ready', connections, userName);
+            console.log('userName is: ' + userName);
         }
     });
         
@@ -110,4 +132,4 @@ io.on('connection', socket => {
   
 });
 
-server.listen(port, () => console.log(`listenning on port ${port}`))
+server.listen(port, () => console.log(`listenning on port ${port}, dev mode: ${app.get('env')}`))
