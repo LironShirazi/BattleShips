@@ -1,7 +1,7 @@
 .square {
     font-family: 'Courgette', cursive;
-    background: #fff;
     border: 1px solid #999;
+    background-color: lightgrey;
     float: left;
     font-size: 24px;
     font-weight: bold;
@@ -15,18 +15,29 @@
     flex: 1 1 10%;
   }
 
-.squareHover:hover {
-border: 2px solid red;
-}
-/* .squareHover:active {
-color: red;
-display: flex;
-justify-content: center;
-align-items: center;
-font-size: 24px;
-} */
+  .squareHover {
+    transition: background-color .3s;
+  }
 
-/* .square:focus {
-  background-color: grey;
-} */
-  
+  .squareHover:hover {
+  border: 2px solid red;
+  background-color: rgb(241, 75, 75);
+  }
+
+
+  .hitSquare {
+    color: orange;
+  }
+
+ 
+
+  /* .hitSquare:visited {
+    color: orange;
+  }
+
+  .hitSquare:active {
+    color: orange;
+  }
+  .hitSquare:focus {
+    color: orange;
+  } */

@@ -19,7 +19,7 @@ const StatusLog = (props) => {
                     </Button>
             </div>  
             break;
-        case 'waiting': 
+        case 'waiting':
             phrase =  <div className="waiting"><CircularProgress color="secondary" /> <span>Waiting for opponent...</span></div>
             break;
         case 'pre-game':
@@ -34,10 +34,20 @@ const StatusLog = (props) => {
                      </Button>;
             break;
         case 'game-started':
+            let hitPhrase = ''
+            if(props.hitStatus === 'miss') {
+                hitPhrase = 'You missed !';
+            } else if(props.hitStatus === 'hit') {
+                hitPhrase = "You hit the enemy's ship!"
+            } else if(props.hitStatus === 'hit-killed') {
+                hitPhrase = "You hit and killed the enemy's ship!"
+            }
             props.isPlayerOneTurn ?
-              phrase = `${props.playerOneName}, it's your turn, choose a spot to attack!`  :
+              phrase = `${props.playerOneName}, it's your turn, choose a spot to attack!` 
+              : 
               phrase = <div className="waiting">
-                  Waiting for {props.playerTwoName} to play  
+                 <span>{hitPhrase} </span>
+                 Waiting for {props.playerTwoName} to play  
                   <CircularProgress color="secondary" />
               </div>;
         

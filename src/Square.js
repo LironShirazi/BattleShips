@@ -9,9 +9,10 @@ const Square = (props) => {
                 onClick={props.onClick}
                 style={{
                     flex: '1 1 ' + (100/ Math.sqrt(props.boardSize)) +'%',
-                    backgroundColor: 'lightgrey'
+                    color: props.color
+
                 }}
-                disabled={props.disabled}  // disabled - disable board2 from being clicked(pre-game).
+                disabled={props.disabled}  //disable board2 from being clicked(pre-game).
              > 
             {props.value} 
              </button>

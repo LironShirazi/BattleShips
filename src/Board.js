@@ -5,21 +5,20 @@ import Square from './Square'
 class Board extends React.Component {
     renderSquare(i) {
       return <Square
-                value={this.props.board[i]} 
+                value={this.props.board[i].value} 
+                color= {this.props.board[i].color || ''}
                 onClick={() => { this.props.onClick(i) }} 
                 key={i} 
                 boardSize={this.props.boardSize}
                 disabled={this.props.disabled}
-                isPlayerOneTurn={this.props.isPlayerOneTurn}
                 hover={!this.props.disabled}
+                isHitted={this.props.hitStatus}
              />;
     }
     
-
     render() {
-        //PRINTING THE BOARD TO THE SCREEN
         const printBoard = [...Array(this.props.boardSize).keys()].map(index => {
-           return this.renderSquare(index);
+              return this.renderSquare(index);
         });
 
       return (

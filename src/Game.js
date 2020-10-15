@@ -11,6 +11,7 @@ import StatusLog from './components/StatusLog/StatusLog';
 import SubsToPlaceList from './components/SubsToPlaceList';
 import HistoryList from './components/HistoryList';
 
+
 const  attackStatus = {
     MISS : 'miss',
     HIT : 'hit',
@@ -32,14 +33,14 @@ class Game extends React.PureComponent {
 
         this.state = {
             players: [
-                        this.player('Liron', Array(this.boardSize).fill(null)),
-                        this.player('opponent', Array(this.boardSize).fill(null)),
+                        this.player('Liron', Array(this.boardSize).fill({value:null})),
+                        this.player('opponent', Array(this.boardSize).fill({value:null})),
                     ],
             boardSize : 100,
             subsConfig : [
-                { name: 'Sub', size: 4, count: 1, placed: 0 },
-                { name: 'Cruiser', size: 3, count: 2, placed: 0 },
-                { name: 'Destroyer', size: 2, count: 2, placed: 0 }
+                { name: 'Sub', size: 4, count: 0, placed: 0 },
+                { name: 'Cruiser', size: 3, count: 1, placed: 0 },
+                { name: 'Destroyer', size: 2, count: 1, placed: 0 }
             ],
             subsPlaced: false,
             status: 'game-init',
@@ -49,6 +50,7 @@ class Game extends React.PureComponent {
             isWinner: null // Bool but initial null
         }
     }
+    
 
     componentWillUnmount() {
         this.socket.close();
@@ -64,10 +66,10 @@ class Game extends React.PureComponent {
             const players = this.state.players.map(player => {
                 return {
                     ...player,
-                    board: Array(this.boardSize).fill(null),
+                    board: Array(this.state.boardSize).fill({value:null}),
                     history: [ 
                     {
-                        board: Array(this.boardSize).fill(null)
+                        board: Array(this.state.boardSize).fill({value:null}),
                     }
                 ],
                 subs: []
@@ -100,7 +102,7 @@ class Game extends React.PureComponent {
             subs: [],
             history: [
                 {
-                    board: Array(this.boardSize).fill(null)
+                    board: Array(this.boardSize).fill({value:null}) 
                 }
             ]
         }
@@ -124,27 +126,27 @@ class Game extends React.PureComponent {
         let hitStatus = '';
         let subsArrHolder;
         const playerData = {
-            board:[...this.state.players[0].board], 
+            board: this.state.players[0].board.map(a => ({...a})), 
             subs: [...this.state.players[0].subs] 
         }
             // hit an empty square
-            if(playerData.board[i] === null) {
-                playerData.board[i] = '·';
+            if(playerData.board[i].value === null) {
+                playerData.board[i].value = '·';
                 hitStatus = attackStatus.MISS;
       
-            } else if (playerData.board[i] === 'X') { // ship is hitted
+            } else if (playerData.board[i].value === 'X') { // ship is hitted
                 playerData.subs.forEach(sub => { 
                     if(sub.subCoordsArr.includes(i)) { // find the sub (and check if hitted alive ship) 
                         sub.numHits ++;
                         if (sub.getHitsLeftToDead() > 0) { // hitted ship, but not killed yet.
-                            playerData.board[i] = 'X';
+                            // playerData.board[i].value = 'X';
+                            playerData.board[i].color = 'orange';
                             hitStatus = attackStatus.HIT;
                        } else {  // hitted and killed the ship
-                            playerData.board[i] = '❌'
                             hitStatus = attackStatus.HIT_KILLED; 
                             subsArrHolder = [...sub.subCoordsArr];
                             sub.isDead = true;
-                            sub.subCoordsArr.forEach(coord => playerData.board[coord] = '❌') //view - self ship killed.
+                            sub.subCoordsArr.forEach(coord => playerData.board[coord].color = '#d73030') //view - self ship killed.
                         }
                     }
                 });
@@ -165,7 +167,8 @@ class Game extends React.PureComponent {
                     winner : players[1].name,
                     status:'player-won', 
                     isPlayerOneTurn: false, 
-                    isWinner: false
+                    isWinner: false,
+                    hitStatus:hitStatus
                 });
             } else {
                 // not lose yet - keep play
@@ -197,9 +200,10 @@ class Game extends React.PureComponent {
         // console.log('[PlayingTurnHandler]: isPlayerOneTurn: ' + this.state.isPlayerOneTurn);
         const history = this.state.players[0].history.slice(0,this.state.stepNumber + 1);
         const current = history[history.length -1];
-        const board = [...current.board];
+        
+        const board = current.board.map(a =>  ({...a}));
 
-        if(board[i] !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
+        if(board[i].value !== null || this.state.status ==='player-won') return; // already clicked square or game eneded.
 
             // send index attack to server
             this.socket.emit('attack', i);
@@ -207,11 +211,13 @@ class Game extends React.PureComponent {
 
                 // console.log('hitStatus [playingTurnHandler] response-to-player hitStatus: ' + hitStatus)
                 if(hitStatus === attackStatus.MISS) {
-                    board[i] = '·';
+                    board[i].value = '·';
                 } else if (hitStatus === attackStatus.HIT) { // ship is hitted
-                    board[i] = 'X';
+                    board[i].value = 'X';
+                    board[i].color = 'orange';
                 } else if(hitStatus === attackStatus.HIT_KILLED) {  // hitted and killed the ship
-                    subsArrHolder.forEach(coord => board[coord] = '❌');
+                    board[i].value = 'X';
+                    subsArrHolder.forEach(coord => board[coord].color = '#d73030');
                 }
             
             const players = [...this.state.players];
@@ -229,13 +235,13 @@ class Game extends React.PureComponent {
                     ],
                     isPlayerOneTurn: false,
                     stepNumber: players[0].history.length - 1,
+                    hitStatus: hitStatus,
             });
         });
     }
-
     placeSubsHandler(i) {
         const boardSizeSqrt = Math.sqrt(this.state.boardSize);
-        if(this.state.players[0].board[i] !== null) return; // already caught point
+        if(this.state.players[0].board[i].value !== null) return; // already caught point
 
         this.countClicks ++;
         if(this.countClicks === 1) {
@@ -244,7 +250,9 @@ class Game extends React.PureComponent {
 
         } else if (this.countClicks === 2) {
             const subsConfigHolder = [...this.state.subsConfig];
-            const board = [...this.state.players[0].board];
+            const board = this.state.players[0].board.map(a => ({...a}));
+
+
             this.x2 = Math.floor(i/boardSizeSqrt);
             this.y2 = i%boardSizeSqrt;
 
@@ -268,7 +276,7 @@ class Game extends React.PureComponent {
                                 if(this.y1 < this.y2 ) {
                                     for(let i=this.y1; i<=this.y2;i++) {
                                         let combinedPoint = dozens + i;
-                                        board[combinedPoint] = 'X';
+                                        board[combinedPoint].value = 'X';
                                         coords = coords.concat(combinedPoint);
                                     }
                                     createSub = new Sub(singleSub.size, coords);
@@ -277,7 +285,7 @@ class Game extends React.PureComponent {
                                 } else if (this.y1 > this.y2) {
                                      for(let i=this.y1; i>=this.y2; i--) {
                                          let combinedPoint = dozens + i;
-                                         board[combinedPoint] = 'X';
+                                         board[combinedPoint].value = 'X';
                                          coords = coords.concat(combinedPoint);
                                      }
                                      createSub = new Sub(singleSub.size, coords);
@@ -319,19 +327,18 @@ class Game extends React.PureComponent {
                             if(this.x1 < this.x2) {
                                 for(let i=this.x1; i<=this.x2; i++) {
                                     let combinedPoint = i*boardSizeSqrt + remainder;
-                                    board[combinedPoint] = 'X';
+                                    board[combinedPoint].value = 'X';
                                     coords = coords.concat(combinedPoint);
                                 }
                                 createSub = new Sub(singleSub.size, coords);
                             } else {
                                 for(let i=this.x1; i>=this.x2; i--) {
                                     let combinedPoint = i*boardSizeSqrt + remainder;
-                                    board[combinedPoint] = 'X';
+                                    board[combinedPoint].value = 'X';
                                     coords = coords.concat(combinedPoint);
                                 }
                                 createSub = new Sub(singleSub.size, coords);
                             }
-                            
                             this.setState(({players}) => {
                                 return {
                                     players: [
@@ -359,7 +366,7 @@ class Game extends React.PureComponent {
         }
 
         clickStartGameHandler() {
-           this.socket = socketio.connect(process.env.REACT_APP_BACKEND_URL);
+           this.socket = socketio.connect(process.env.REACT_APP_LOCALHOST);
             this.socket.once('player-number', (num, playerName) => {
                 if(num === -1) {
                     alert('Sorry, server is full.');
@@ -424,7 +431,7 @@ class Game extends React.PureComponent {
                     // console.log('enemy player number: ' + playerNum);
                     // console.log('playerName from server' + playerName);
                        let players = [...this.state.players];
-                       players[1].board = Array(this.boardSize).fill(null);
+                       players[1].board = Array(this.state.boardSize).fill({value:null});
                        players[1].name = playerName;
                     this.setState({
                         players: players,
@@ -442,8 +449,12 @@ class Game extends React.PureComponent {
             
     render() {
         // console.log(this.state.players);
+        // const history = this.state.players[0].history;
+        // const holdcurrent = history[this.state.stepNumber];
+        // const current = holdcurrent.board.map(a => ({...a}));
         const history = this.state.players[0].history;
         const current = history[this.state.stepNumber];
+
         return (
             <div className="main">
                 <div className="main-header">
@@ -471,6 +482,7 @@ class Game extends React.PureComponent {
                         score={this.state.players[0].score}
                         enemyScore={this.state.players[1].score}
                         isWinner={this.state.isWinner}
+                        hitStatus={this.state.hitStatus}
                     />
                  </div> 
                     <div className="board-header">
@@ -486,7 +498,7 @@ class Game extends React.PureComponent {
                         onClick={ (i) => this.placeSubsHandler(i)}
                         disabled={this.state.status !== 'pre-game'}
                     /> 
-                    
+
                     {   !this.state.subsPlaced ?
                         <SubsToPlaceList 
                             status={this.state.status}
@@ -504,6 +516,7 @@ class Game extends React.PureComponent {
                         disabled={!this.state.isPlayerOneTurn}
                         onClick={(i) => this.PlayingTurnHandler(i)}
                         isPlayerOneTurn={this.state.isPlayerOneTurn}
+                        hitStatus={this.state.hitStatus === 'hit' ? true : false}
                     />    
                 </div>
             </div>

@@ -10,9 +10,15 @@ const compression = require('compression');
 const morgan = require('morgan');
 
 
-let userName = process.env.userName;
-console.log(userName);
+const userName = process.env['USERPROFILE'].split(path.sep)[2];
 
+app.use('/', (req, res) => {
+
+    const usercheck = req.headers['x-iisnode-auth_user'];
+    console.log('usercheck ' +usercheck);
+    // console.log(req);
+    
+  });
 
 const dev = app.get('env') !== 'production';
 if(!dev) {
@@ -27,24 +33,23 @@ if(!dev) {
     });
 } 
 if(dev) {
+    // app.use(express.static(path.join(__dirname,'..' ,'build')));
     app.use(morgan('dev'));
+
+    // app.get('/', (req, res) => {
+    //     const usercheck = req.headers['x-iisnode-auth_user'];
+    //     console.log('inside app.get -- usercheck is:' + usercheck);
+    //   });
+
 }
-
-// const publicPath = path.join(__dirname, '..', 'public');
-// app.use(express.static(publicPath));
-// console.log(publicPath);
-
-// app.use('*',  (req, res) => {
-//     res.sendFile(path.join(publicPath, 'index.html'));
-// });
 
 
 let connections = [null, null];
-// let players = [];
+let names = [null, null];
 
 io.on('connection', socket => {
-    // console.log(username);
     //find available player number
+    console.log(socket.request);
     let playerIndex = -1;
 
     for(let i=0 ; i<connections.length; i++) {
@@ -55,7 +60,6 @@ io.on('connection', socket => {
     }
 
     //Tell the connecting player his player number
-    // socket.emit('player-number', playerIndex, os.userInfo().username);
     socket.emit('player-number', playerIndex, userName);
     console.log('userName is: ' + userName);
 
