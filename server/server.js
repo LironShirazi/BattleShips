@@ -10,16 +10,7 @@ const compression = require('compression');
 const morgan = require('morgan');
 
 
-const userName = process.env['USERPROFILE'].split(path.sep)[2];
 
-app.use('/', (req, res) => {
-    const headers = JSON.stringify(req.headers);
-    const usercheck = req.headers['x-iisnode-auth_user'];
-    console.log('usercheck ' +usercheck);
-    console.log('headers' + headers)
-    // console.log(req);
-    
-  });
 
 const dev = app.get('env') !== 'production';
 if(!dev) {
@@ -33,20 +24,20 @@ if(!dev) {
       res.sendFile(path.join(__dirname, 'build', 'index.html'));
     });
 } 
-if(dev) {
-    // app.use(express.static(path.join(__dirname,'..' ,'build')));
-    app.use(morgan('dev'));
+// if(dev) {
+//     // app.use(express.static(path.join(__dirname,'..' ,'build')));
+//     app.use(morgan('dev'));
 
-    // app.get('/', (req, res) => {
-    //     const usercheck = req.headers['x-iisnode-auth_user'];
-    //     console.log('inside app.get -- usercheck is:' + usercheck);
-    //   });
+//     // app.get('/', (req, res) => {
+//     //     const usercheck = req.headers['x-iisnode-auth_user'];
+//     //     console.log('inside app.get -- usercheck is:' + usercheck);
+//     //   });
 
-}
+// }
 
 
 let connections = [null, null];
-let names = [null, null];
+const userName = 'Player';
 
 io.on('connection', socket => {
     //find available player number
