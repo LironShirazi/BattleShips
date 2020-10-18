@@ -39,9 +39,9 @@ class Game extends React.PureComponent {
                     ],
             boardSize : 100,
             subsConfig : [
-                { name: 'Sub', size: 4, count: 0, placed: 0 },
-                { name: 'Cruiser', size: 3, count: 1, placed: 0 },
-                { name: 'Destroyer', size: 2, count: 1, placed: 0 }
+                { name: 'Sub', size: 4, count: 1, placed: 0 },
+                { name: 'Cruiser', size: 3, count: 2, placed: 0 },
+                { name: 'Destroyer', size: 2, count: 2, placed: 0 }
             ],
             subsPlaced: false,
             status: 'game-init',

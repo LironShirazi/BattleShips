@@ -10,30 +10,18 @@ const compression = require('compression');
 const morgan = require('morgan');
 
 
-
-
 const dev = app.get('env') !== 'production';
 if(!dev) {
-    app.disable('x-powered-by');
     app.use(compression());
     app.use(morgan('common'));
 
     app.use(express.static(path.join(__dirname,'..' ,'build')));
     
-    app.get('/', (req, res) => {
-      res.sendFile(path.join(__dirname, 'build', 'index.html'));
-    });
+    // app.get('/', (req, res) => {
+    //   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    // });
 } 
-// if(dev) {
-//     // app.use(express.static(path.join(__dirname,'..' ,'build')));
-//     app.use(morgan('dev'));
 
-//     // app.get('/', (req, res) => {
-//     //     const usercheck = req.headers['x-iisnode-auth_user'];
-//     //     console.log('inside app.get -- usercheck is:' + usercheck);
-//     //   });
-
-// }
 
 
 let connections = [null, null];
