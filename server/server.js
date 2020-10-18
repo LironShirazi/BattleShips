@@ -10,18 +10,21 @@ const compression = require('compression');
 const morgan = require('morgan');
 
 
-// const dev = app.get('env') !== 'production';
-// if(!dev) {
-//     app.use(compression());
-//     app.use(morgan('common'));
+const dev = app.get('env') !== 'production';
+if(!dev) {
+    app.use(compression());
+    app.use(morgan('common'));
 
-//     app.use(express.static(path.join(__dirname,'..' ,'build')));
+    app.use(express.static(path.join(__dirname,'..' ,'build')));
     
-//     // app.get('/', (req, res) => {
-//     //   res.sendFile(path.join(__dirname, 'build', 'index.html'));
-//     // });
-// } 
-
+    app.get('/', (req, res) => {
+      res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    });
+} 
+// if(dev) {
+//     // app.use(express.static(path.join(__dirname,'..' ,'build')));
+//     app.use(morgan('dev'));
+// }
 
 
 let connections = [null, null];
