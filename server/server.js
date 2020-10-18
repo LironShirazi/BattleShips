@@ -13,9 +13,10 @@ const morgan = require('morgan');
 const userName = process.env['USERPROFILE'].split(path.sep)[2];
 
 app.use('/', (req, res) => {
-
+    const headers = JSON.stringify(req.headers);
     const usercheck = req.headers['x-iisnode-auth_user'];
     console.log('usercheck ' +usercheck);
+    console.log('headers' + headers)
     // console.log(req);
     
   });

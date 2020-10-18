@@ -3,7 +3,7 @@ import './Board.css';
 import Square from './Square'
 
 class Board extends React.Component {
-    renderSquare(i) {
+  renderSquare(i) {
       return <Square
                 value={this.props.board[i].value} 
                 color= {this.props.board[i].color || ''}
