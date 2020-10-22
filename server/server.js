@@ -26,26 +26,50 @@ if(!dev) {
 //     app.use(morgan('dev'));
 // }
 
-
+let rooms = {};
 let connections = [null, null];
 const userName = 'Player';
+let roomNum = 1;
 
 io.on('connection', socket => {
+    // if(rooms[roomNum].length < 2) {
+
+        rooms = io.sockets.adapter.rooms;
+        if(rooms[roomNum] && rooms[roomNum].length > 1) {  // Increase roomNum - 2 clients has joined room
+                //check if there is a place in any existing room.
+                if(rooms[roomNum].length === 2) {
+                    const loopTo = roomNum;
+                    for(let i=1;i<=loopTo; i++) {
+                        console.log('room num is: ' +roomNum);
+                        if(rooms[i].length < 2) {
+                            roomNum = i;
+                            console.log('rooms[i]'+ rooms[i].length)
+                            break;
+                        } else {
+                            roomNum++; 
+                            break;
+                        } 
+                    }
+                }
+            }
+        socket.join(roomNum);
+
+        console.log(rooms);
+        console.log(rooms[roomNum].length , 'roomNum' + roomNum); // num players in room
+    
     //find available player number
-    console.log(socket.request);
     let playerIndex = -1;
 
-    for(let i=0 ; i<connections.length; i++) {
-        if(connections[i] === null) {
-            playerIndex = i;
-            break;
-        }
-    }
+    // for(let i=0 ; i<connections.length; i++) {
+    //     if(connections[i] === null) {
+    //         playerIndex = i;
+    //         break;
+    //     }
+    // }
 
     //Tell the connecting player his player number
-    socket.emit('player-number', playerIndex, userName);
-    console.log('userName is: ' + userName);
-
+    socket.emit('player-number', playerIndex, userName, roomNum);
+    
     console.log(`player ${playerIndex} has connected to server.`);
 
     // setting player 
@@ -60,6 +84,7 @@ io.on('connection', socket => {
      socket.on('disconnect', () => {
         console.log(`player ${playerIndex} disconnected form the server.`);
         connections[playerIndex] = null;
+
      });
 
      //update player is ready.
