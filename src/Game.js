@@ -391,6 +391,7 @@ class Game extends React.PureComponent {
 
         clickStartGameHandler() {
            this.socket = socketio.connect(process.env.REACT_APP_LOCALHOST);
+           this.socket.once('connected-to-room', message => console.log(message))
             this.socket.once('player-number', (num, playerName, roomNum) => {
                 console.log('You are in room number: ' + roomNum);
                 // if(num === -1) {

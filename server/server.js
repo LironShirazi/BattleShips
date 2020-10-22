@@ -26,14 +26,14 @@ if(!dev) {
 //     app.use(morgan('dev'));
 // }
 
-let rooms = {};
-let connections = [null, null];
 const userName = 'Player';
+let connections = [null, null];
+let rooms = {};
 let roomNum = 1;
 
 io.on('connection', socket => {
     // if(rooms[roomNum].length < 2) {
-
+    
         rooms = io.sockets.adapter.rooms;
         if(rooms[roomNum] && rooms[roomNum].length > 1) {  // Increase roomNum - 2 clients has joined room
                 //check if there is a place in any existing room.
@@ -54,6 +54,10 @@ io.on('connection', socket => {
             }
         socket.join(roomNum);
 
+        rooms[roomNum].sockets[socket.id] = false; // set not ready
+        console.log(rooms[roomNum][socket.id]);
+        
+
         console.log(rooms);
         console.log(rooms[roomNum].length , 'roomNum' + roomNum); // num players in room
     
@@ -68,6 +72,7 @@ io.on('connection', socket => {
     // }
 
     //Tell the connecting player his player number
+    io.sockets.in(roomNum).emit('connected-to-room','You are in room'+roomNum )
     socket.emit('player-number', playerIndex, userName, roomNum);
     
     console.log(`player ${playerIndex} has connected to server.`);
@@ -75,10 +80,10 @@ io.on('connection', socket => {
     // setting player 
     connections[playerIndex] = false;
     
-    //IGNORE player 3 
-     if(playerIndex === -1) return;
+
+     
     // Tell everyone what player number connected
-     socket.broadcast.emit('player-connection', playerIndex);
+    //  socket.broadcast.emit('player-connection', playerIndex);
 
      //disconnect handler 
      socket.on('disconnect', () => {
