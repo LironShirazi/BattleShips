@@ -34,7 +34,7 @@ class Game extends React.PureComponent {
 
         this.state = {
             players: [
-                        this.player('Liron', Array(this.boardSize).fill({value:null})),
+                        this.player('', Array(this.boardSize).fill({value:null})),
                         this.player('opponent', Array(this.boardSize).fill({value:null})),
                     ],
             boardSize : 100,
@@ -51,7 +51,6 @@ class Game extends React.PureComponent {
             isWinner: null 
         }
     }
-    
 
     componentWillUnmount() {
         this.socket.close();
@@ -385,9 +384,9 @@ class Game extends React.PureComponent {
         }
 
         clickStartGameHandler() {
+           const playerName = prompt("Welcome to Battleship!\nPlease enter your name");
            this.socket = socketio.connect(process.env.REACT_APP_LOCALHOST);
-           this.socket.once('connected-to-room', message => console.log(message))
-           this.socket.once('player-number', (num, playerName, roomNum) => {
+           this.socket.once('player-number', (num, roomNum) => {
                this.socket.emit('send-room-number', num, roomNum);
                     this.playerNum = num;
                     this.setState({ 
@@ -431,18 +430,17 @@ class Game extends React.PureComponent {
             
         readyClickHandler() {
             this.setState({ status: 'waiting'});
-
             this.socket.emit('player-ready', this.playerNum, this.state.roomNum);
 
             //checks if both players ready to start match (if subs placed)
             //receive enemy data and update state in players[1]
-             this.socket.on('player-clicked-ready', (connections, name, playerTurn) => {
+             this.socket.on('player-clicked-ready', (connections) => {
 
                 // after set ships, sending the player data to the server (for the enemy)
-                this.socket.emit('player-data-send', name, this.playerNum, this.state.roomNum);
+                this.socket.emit('player-data-send', this.state.players[0].name, this.state.roomNum);
               
                 //create player[1] update his name and create clean board for playing.
-                this.socket.once('retrive-enemy-data', (playerName) => {
+                this.socket.once('retrive-enemy-data', playerName => {
 
                        let players = [...this.state.players];
                        players[1].board = Array(this.state.boardSize).fill({value:null});
@@ -463,7 +461,6 @@ class Game extends React.PureComponent {
     render() {
         const history = this.state.players[0].history;
         const current = history[this.state.stepNumber];
-        console.log('playerNum'+ this.playerNum, 'Room: '+this.state.roomNum)
 
         return (
             <div className="main">
