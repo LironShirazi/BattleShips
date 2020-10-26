@@ -385,7 +385,7 @@ class Game extends React.PureComponent {
 
         clickStartGameHandler() {
            const playerName = prompt("Welcome to Battleship!\nPlease enter your name");
-           this.socket = socketio.connect(process.env.REACT_APP_LOCALHOST);
+           this.socket = socketio.connect(process.env.REACT_APP_BACKEND_URL);
            this.socket.once('player-number', (num, roomNum) => {
                this.socket.emit('send-room-number', num, roomNum);
                     this.playerNum = num;
